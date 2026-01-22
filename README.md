@@ -3,7 +3,7 @@
 
 > This is a fork of [OnionMedia]([https://github.com/original/project](https://github.com/onionware-github/OnionMedia))
 > by Jaden [onionware-github](https://github.com/onionware-github).
-> Maintained by: Kustrica
+> Maintained by: Kustrica.
 > Licensed under AGPL-3.0.
 
 ## What’s new in this fork
