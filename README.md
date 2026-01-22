@@ -1,5 +1,14 @@
 
-# OnionMedia - The Free Media Converter and Downloader
+# OnionMedia - The Free Media Converter and Downloader (Fork)
+
+> This is a fork of [OnionMedia]([https://github.com/original/project](https://github.com/onionware-github/OnionMedia))
+> by Jaden [onionware-github](https://github.com/onionware-github).
+> Maintained by: Kustrica
+> Licensed under AGPL-3.0.
+
+## What’s new in this fork
+- Added a counter of all added links in the download queue
+- Added support for downloading multiple videos from a file
 
 You use Linux? Check out [OnionMedia X](https://github.com/onionware-github/OnionMedia-X)!
 
