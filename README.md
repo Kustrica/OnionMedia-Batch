@@ -9,7 +9,7 @@
 ## What’s new in this fork
 - Added a counter of all added links in the download queue
 - Added support for downloading multiple videos from a file
-
+## 
 You use Linux? Check out [OnionMedia X](https://github.com/onionware-github/OnionMedia-X)!
 
 <a href="https://github.com/onionware-github/OnionMedia/blob/main/images/icon.svg">
