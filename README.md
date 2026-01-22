@@ -7,8 +7,14 @@
 > Licensed under AGPL-3.0.
 
 ## What’s new in this fork
-- Added a counter of all added links in the download queue
-- Added support for downloading multiple videos from a file
+- Added a counter showing the number of downloaded links out of the added ones
+- Added support for downloading multiple videos from a file or clipboard
+- Added an import progress bar
+
+<p align="center">
+  <img src="placeholder.png" width="600">
+</p>
+
 ## 
 You use Linux? Check out [OnionMedia X](https://github.com/onionware-github/OnionMedia-X)!
 
