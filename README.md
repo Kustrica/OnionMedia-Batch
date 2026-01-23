@@ -11,9 +11,10 @@
 - Added support for downloading multiple videos from a file or clipboard
 - Added an import progress bar
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/b915d436-d736-4276-b34f-2e728d0a48e2" width="600">
-</p>
+## New Features
+| Download Counter | Import Progress |
+|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/d4da273b-6437-4707-886f-3c8c8c26625f" width="100%"> | <img src="https://github.com/user-attachments/assets/95332d48-f61b-4190-8c80-6e7daa8b967e" width="100%"> | 
 
 ## Installation Guide:
 1. Download the latest release (`.zip`) and extract it.
