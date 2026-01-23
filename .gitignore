@@ -402,6 +402,8 @@ ffmpeg.exe
 ffprobe.exe
 ffplay.exe
 yt-dlp.exe
+deno.exe
 OnionMedia/OnionMedia/OnionMedia/ExternalBinaries/ffmpeg+yt-dlp/binaries/ffmpeg.exe
 OnionMedia/OnionMedia/OnionMedia/ExternalBinaries/ffmpeg+yt-dlp/binaries/ffprobe.exe
 OnionMedia/OnionMedia/OnionMedia/ExternalBinaries/ffmpeg+yt-dlp/binaries/yt-dlp.exe
+OnionMedia/OnionMedia/OnionMedia/ExternalBinaries/ffmpeg+yt-dlp/binaries/deno.exe

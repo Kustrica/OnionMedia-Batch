@@ -65,7 +65,9 @@ if ((Is-Placeholder $ffmpegPath) -or (Is-Placeholder $ffprobePath)) {
 $ytdlpPath = Join-Path $binariesDir "yt-dlp.exe"
 # Always check for update or download if missing
 # Note: Since the user might want to keep a stable version, we only download if missing. 
-# But for "auto install" usually implies "ensure it exists".
+# --- yt-dlp ---
+$ytdlpPath = Join-Path $binariesDir "yt-dlp.exe"
+
 if (Is-Placeholder $ytdlpPath) {
     Write-Host "yt-dlp not found (or is a placeholder). Downloading..." -ForegroundColor Cyan
     $ytdlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
@@ -79,6 +81,42 @@ if (Is-Placeholder $ytdlpPath) {
     }
 } else {
     Write-Host "yt-dlp is already present." -ForegroundColor Green
+}
+
+# --- Deno (Optional JS engine for yt-dlp) ---
+$denoPath = Join-Path $binariesDir "deno.exe"
+
+if (Is-Placeholder $denoPath) {
+    Write-Host "Deno not found (or is a placeholder). Downloading..." -ForegroundColor Cyan
+    # Deno is distributed as a zip file
+    $denoUrl = "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip"
+    $denoZipPath = Join-Path $env:TEMP "deno.zip"
+    
+    try {
+        Invoke-WebRequest -Uri $denoUrl -OutFile $denoZipPath
+        
+        Write-Host "Extracting Deno..."
+        $denoExtractPath = Join-Path $env:TEMP "deno_extract"
+        if (Test-Path $denoExtractPath) { Remove-Item $denoExtractPath -Recurse -Force }
+        Expand-Archive -Path $denoZipPath -DestinationPath $denoExtractPath
+        
+        $denoExe = Join-Path $denoExtractPath "deno.exe"
+        if (Test-Path $denoExe) {
+            Copy-Item -Path $denoExe -Destination $binariesDir -Force
+            Write-Host "Deno installed successfully." -ForegroundColor Green
+        } else {
+             Write-Error "Could not find 'deno.exe' in downloaded archive."
+        }
+    }
+    catch {
+        Write-Error "Failed to download Deno: $_"
+    }
+    finally {
+        if (Test-Path $denoZipPath) { Remove-Item $denoZipPath -Force }
+        if (Test-Path $denoExtractPath) { Remove-Item $denoExtractPath -Recurse -Force }
+    }
+} else {
+    Write-Host "Deno is already present." -ForegroundColor Green
 }
 
 Write-Host "Dependency setup complete." -ForegroundColor Green
