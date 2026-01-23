@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2022 Jaden Phil Nebel (Onionware)
  *
  * This file is part of OnionMedia.
@@ -92,5 +92,22 @@ namespace OnionMedia.Views
 				UseShellExecute = true
 			});
 		}
+
+        private void OpenVideoFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var path = AppSettings.Instance.DownloadsVideoSavePath;
+                if (System.IO.Directory.Exists(path))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = path,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch { }
+        }
     }
 }

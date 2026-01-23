@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2022 Jaden Phil Nebel (Onionware)
  *
  * This file is part of OnionMedia.
@@ -11,6 +11,8 @@
 
 using System;
 using System.Linq;
+using System.Diagnostics;
+using OnionMedia.Core.Models;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -63,6 +65,23 @@ namespace OnionMedia.Views
         private void mediaList_DragOver(object sender, DragEventArgs e)
         {
             e.AcceptedOperation = (ViewModel.AddFileCommand.IsRunning || ViewModel.StartConversionCommand.IsRunning) ? DataPackageOperation.None : DataPackageOperation.Link;
+        }
+
+        private void OpenVideoFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var path = AppSettings.Instance.ConvertedVideoSavePath;
+                if (System.IO.Directory.Exists(path))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = path,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch { }
         }
     }
 }

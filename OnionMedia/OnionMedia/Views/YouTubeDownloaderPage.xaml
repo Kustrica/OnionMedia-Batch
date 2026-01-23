@@ -490,9 +490,9 @@
                                     VerticalAlignment="Stretch">
 
                                     <StackPanel>
-                                        <SymbolIcon Symbol="Download" Visibility="{x:Bind ViewModel.DownloadFileCommand.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=true}"/>
+                                        <SymbolIcon Symbol="Download" Visibility="{x:Bind ViewModel.DownloadFileCommand.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}"/>
                                         <ProgressRing x:Name="btnProgressRing" Visibility="{x:Bind ViewModel.DownloadFileCommand.IsRunning}"/>
-                                        <TextBlock x:Uid="/DownloaderPage/downloadStreamBtn" Visibility="{x:Bind ViewModel.DownloadFileCommand.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=true}"/>
+                                        <TextBlock x:Uid="/DownloaderPage/downloadStreamBtn" Visibility="{x:Bind ViewModel.DownloadFileCommand.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}"/>
                                     </StackPanel>
                                 </Button>
 
@@ -549,6 +549,15 @@
                 </Grid>
             </Grid>
         </ScrollViewer>
+
+        <Button VerticalAlignment="Bottom" 
+                HorizontalAlignment="Right" 
+                Margin="20"
+                Click="OpenVideoFolder_Click"
+                Width="45" Height="40"
+                ToolTipService.ToolTip="Open Video Folder">
+            <SymbolIcon Symbol="OpenLocal"/>
+        </Button>
 
         <Grid Canvas.ZIndex="-1" x:Name="donationGrid" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Background="#00000066" BorderBrush="SlateGray" BorderThickness="0,1,0,0" Padding="15,0" Height="100">
             <Grid.ColumnDefinitions>

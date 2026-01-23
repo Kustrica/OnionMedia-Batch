@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  * Copyright (C) 2022 Jaden Phil Nebel (Onionware)
  *
  * This file is part of OnionMedia.
@@ -479,6 +479,14 @@
 
             <!-- Bottom area with ProgressBar -->
             <ctc:DockPanel Grid.Row="2" Padding="10">
+                <Button ctc:DockPanel.Dock="Right"
+                        Margin="20,0,0,0"
+                        VerticalAlignment="Center"
+                        Click="OpenVideoFolder_Click"
+                        Width="45" Height="40"
+                        ToolTipService.ToolTip="Open Video Folder">
+                    <SymbolIcon Symbol="OpenLocal"/>
+                </Button>
                 <StackPanel x:Name="btnsForWideView" Orientation="Horizontal">
                     <Button Command="{x:Bind ViewModel.AddFileCommand}"
                             IsEnabled="{x:Bind ViewModel.AddingFiles, Converter={StaticResource InverseBoolConverter}}"
