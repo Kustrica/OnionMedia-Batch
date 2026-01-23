@@ -176,8 +176,8 @@ namespace OnionMedia.Core.Classes
 				stream.Moving = true;
 				stream.Path = await MoveToDisk(tempfile, stream.Video.Title, itemType, customOutputDirectory, cToken);
 
-				stream.RaiseFinished();
 				stream.DownloadState = Enums.DownloadState.IsDone;
+				stream.RaiseFinished();
 			}
 			catch (Exception ex)
 			{

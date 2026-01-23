@@ -290,9 +290,8 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Visibility="{x:Bind ViewModel.GetMP4, Mode=OneWay}" VerticalAlignment="Top" Margin="5,0,0,0">
-                            <StackPanel Visibility="{x:Bind ViewModel.QueueIsNotEmpty, Mode=OneWay}">
+                            <StackPanel Visibility="{x:Bind ViewModel.ResolutionsAvailable, Mode=OneWay}">
                                 <TextBlock Text="Max Quality (All)" Margin="0,10,0,5" FontWeight="SemiBold" FontSize="16"/>
-                                <TextBlock x:Uid="/DownloaderPage/upTo" Foreground="Gray" Visibility="{x:Bind ViewModel.MultipleVideos}"/>
                                 <ComboBox Name="qualitySelection"
                                       Margin="0,2"
                                       ItemsSource="{x:Bind ViewModel.Resolutions}"

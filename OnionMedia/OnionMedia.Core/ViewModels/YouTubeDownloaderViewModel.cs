@@ -855,7 +855,7 @@ namespace OnionMedia.Core.ViewModels
             canceledAll = false;
             taskbarProgressService?.SetType(typeof(YouTubeDownloaderViewModel));
             VideoNotFound = false;
-            uint finishedCount = 0;
+            int finishedCount = 0;
             uint unauthorizedAccessExceptions = 0;
             uint directoryNotFoundExceptions = 0;
             uint notEnoughSpaceExceptions = 0;
@@ -881,7 +881,7 @@ namespace OnionMedia.Core.ViewModels
                 video.FinishedEventHandler += (o, e) =>
                 {
                     loadedVideo = (StreamItemModel)o;
-                    finishedCount++;
+                    Interlocked.Increment(ref finishedCount);
                     OnPropertyChanged(nameof(QueueStatusText));
                 };
 
@@ -989,7 +989,7 @@ namespace OnionMedia.Core.ViewModels
 		            }
 
 		            toastNotificationService.SendDownloadsDoneNotification(loadedVideo.Path.OriginalString,
-			            finishedCount, filenames);
+			            (uint)finishedCount, filenames);
 	            }
             }
             finally
