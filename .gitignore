@@ -398,8 +398,10 @@ FodyWeavers.xsd
 *.sln.iml
 
 OnionMedia/OnionMedia/legacy-code.txt
-# Ignore large binaries but keep the folder
-ExternalBinaries/ffmpeg+yt-dlp/binaries/ffmpeg.exe
-ExternalBinaries/ffmpeg+yt-dlp/binaries/ffprobe.exe
-ExternalBinaries/ffmpeg+yt-dlp/binaries/ffplay.exe
-ExternalBinaries/ffmpeg+yt-dlp/binaries/yt-dlp.exe
+ffmpeg.exe
+ffprobe.exe
+ffplay.exe
+yt-dlp.exe
+OnionMedia/OnionMedia/OnionMedia/ExternalBinaries/ffmpeg+yt-dlp/binaries/ffmpeg.exe
+OnionMedia/OnionMedia/OnionMedia/ExternalBinaries/ffmpeg+yt-dlp/binaries/ffprobe.exe
+OnionMedia/OnionMedia/OnionMedia/ExternalBinaries/ffmpeg+yt-dlp/binaries/yt-dlp.exe
