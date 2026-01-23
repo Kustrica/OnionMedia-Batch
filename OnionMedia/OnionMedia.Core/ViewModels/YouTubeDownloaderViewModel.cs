@@ -799,6 +799,14 @@ namespace OnionMedia.Core.ViewModels
 
         private async Task RemoveVideoAsync()
         {
+            // If no video is selected, try to select the last one to remove it (as requested behavior)
+            if (SelectedVideo == null && Videos.Any())
+            {
+                SelectedVideo = Videos.Last();
+            }
+
+            if (SelectedVideo == null) return;
+
             try
             {
                 if (SelectedVideo.DownloadState == DownloadState.IsLoading)

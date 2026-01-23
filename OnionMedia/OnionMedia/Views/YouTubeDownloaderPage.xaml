@@ -290,13 +290,15 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Visibility="{x:Bind ViewModel.GetMP4, Mode=OneWay}" VerticalAlignment="Top" Margin="5,0,0,0">
-                            <TextBlock Text="Max Quality (All)" Margin="0,10,0,5" FontWeight="SemiBold" FontSize="16"/>
-                            <TextBlock x:Uid="/DownloaderPage/upTo" Foreground="Gray" Visibility="{x:Bind ViewModel.MultipleVideos}"/>
-                            <ComboBox Name="qualitySelection"
-                                  Margin="0,2"
-                                  ItemsSource="{x:Bind ViewModel.Resolutions}"
-                                  SelectedItem="{x:Bind ViewModel.SelectedQuality, Mode=TwoWay}"
-                                  IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty}" MinWidth="120" HorizontalAlignment="Left"/>
+                            <StackPanel Visibility="{x:Bind ViewModel.QueueIsNotEmpty, Mode=OneWay}">
+                                <TextBlock Text="Max Quality (All)" Margin="0,10,0,5" FontWeight="SemiBold" FontSize="16"/>
+                                <TextBlock x:Uid="/DownloaderPage/upTo" Foreground="Gray" Visibility="{x:Bind ViewModel.MultipleVideos}"/>
+                                <ComboBox Name="qualitySelection"
+                                      Margin="0,2"
+                                      ItemsSource="{x:Bind ViewModel.Resolutions}"
+                                      SelectedItem="{x:Bind ViewModel.SelectedQuality, Mode=TwoWay}"
+                                      IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty}" MinWidth="120" HorizontalAlignment="Left"/>
+                            </StackPanel>
                         </StackPanel>
                     </Grid>
 
@@ -500,14 +502,14 @@
                                 VerticalAlignment="Stretch"
                                 Command="{x:Bind ViewModel.RemoveCommand}"
                                 CommandParameter="{x:Bind videoQueue.SelectedIndex}"
-                                IsEnabled="{x:Bind ViewModel.SelectionIsInRange(ViewModel.Videos, videoQueue.SelectedIndex, x:False)}">
+                                IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty, Mode=OneWay}">
                                     <StackPanel>
                                         <SymbolIcon Symbol="Delete"/>
                                         <TextBlock x:Uid="/DownloaderPage/removeBtn"/>
                                     </StackPanel>
                                     <SplitButton.Flyout>
                                         <Flyout x:Name="removeBtnFlyout" Placement="Bottom">
-                                            <Button Margin="-10" Click="RemoveAll_Clicked" Command="{x:Bind ViewModel.RemoveAllCommand}" IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty}">
+                                            <Button Margin="-10" Click="RemoveAll_Clicked" Command="{x:Bind ViewModel.RemoveAllCommand}" IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty, Mode=OneWay}">
                                                 <StackPanel Orientation="Horizontal" Spacing="5">
                                                     <SymbolIcon Symbol="Cancel"/>
                                                     <TextBlock x:Uid="removeAll"/>
