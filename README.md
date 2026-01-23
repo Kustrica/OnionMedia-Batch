@@ -1,5 +1,5 @@
 
-# OnionMedia - The Free Media Converter and Downloader (Fork)
+# OnionMedia Batch
 
 > This is a fork of [OnionMedia]([https://github.com/original/project](https://github.com/onionware-github/OnionMedia))
 > by Jaden [onionware-github](https://github.com/onionware-github).
@@ -39,6 +39,8 @@ If you want to build this project from source, you need to download the required
 
 ## 
 ## 
+# OnionMedia
+
 You use Linux? Check out [OnionMedia X](https://github.com/onionware-github/OnionMedia-X)!
 
 <a href="https://github.com/onionware-github/OnionMedia/blob/main/images/icon.svg">
