@@ -25,16 +25,17 @@ function Is-Placeholder($path) {
 
 if ((Is-Placeholder $ffmpegPath) -or (Is-Placeholder $ffprobePath)) {
     Write-Host "FFmpeg or FFprobe not found (or is a placeholder). Downloading..." -ForegroundColor Cyan
-    
-    $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.zip"
-    $zipPath = Join-Path $env:TEMP "ffmpeg-release-full.zip"
+
+    # https://github.com/BtbN/FFmpeg-Builds/releases
+    $ffmpegUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+    $zipPath = Join-Path $env:TEMP "ffmpeg-master-latest-win64-gpl.zip"
+    $extractPath = Join-Path $env:TEMP "ffmpeg_extract"
     
     try {
-        Write-Host "Downloading FFmpeg from $ffmpegUrl..."
+        Write-Host "Downloading FFmpeg from GitHub (BtbN)..."
         Invoke-WebRequest -Uri $ffmpegUrl -OutFile $zipPath
         
         Write-Host "Extracting FFmpeg..."
-        $extractPath = Join-Path $env:TEMP "ffmpeg_extract"
         if (Test-Path $extractPath) { Remove-Item $extractPath -Recurse -Force }
         Expand-Archive -Path $zipPath -DestinationPath $extractPath
         
@@ -54,8 +55,8 @@ if ((Is-Placeholder $ffmpegPath) -or (Is-Placeholder $ffprobePath)) {
     }
     finally {
         # Cleanup
-        if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-        if (Test-Path $extractPath) { Remove-Item $extractPath -Recurse -Force }
+        if ($zipPath -and (Test-Path $zipPath)) { Remove-Item $zipPath -Force }
+        if ($extractPath -and (Test-Path $extractPath)) { Remove-Item $extractPath -Recurse -Force }
     }
 } else {
     Write-Host "FFmpeg and FFprobe are already present." -ForegroundColor Green
