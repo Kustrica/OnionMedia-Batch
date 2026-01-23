@@ -21,6 +21,7 @@
 2. Open the extracted folder (e.g., `OnionMedia_xx`).
 3. Double-click on `install.bat`.
 4. A PowerShell window will open. Follow the instructions (you may need to press Enter or type 'Y' to proceed with certificate installation).
+ 
 **Note:** You may be prompted to enable **Developer Mode** in Windows Settings. If the Settings app opens, simply toggle "Developer Mode" to **On**, then return to the PowerShell window to continue installation.
 
 **Development Setup**
