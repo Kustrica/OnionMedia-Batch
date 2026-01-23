@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2022 Jaden Phil Nebel (Onionware)
  *
  * This file is part of OnionMedia.
@@ -30,8 +30,11 @@ using OnionMedia.Core.Extensions;
 using System.Text.RegularExpressions;
 using TextCopy;
 using OnionMedia.Core.Services;
+using YoutubeDLSharp;
+using YoutubeDLSharp.Metadata;
 using YoutubeDLSharp.Options;
 using System.Net;
+using DownloadState = OnionMedia.Core.Enums.DownloadState;
 using System.Drawing;
 using System.Drawing.Imaging;
 
@@ -94,6 +97,31 @@ namespace OnionMedia.Core.ViewModels
         public event EventHandler<bool> DownloadDone;
 
         [ObservableProperty]
+        private bool isImporting;
+
+        [ObservableProperty]
+        private int importTotalLinks;
+
+        [ObservableProperty]
+        private int importProcessedLinks;
+
+        public int ImportProgress => ImportTotalLinks > 0 ? (int)((double)ImportProcessedLinks / ImportTotalLinks * 100) : 0;
+
+        public string ImportProgressText => $"Imported: {ImportProcessedLinks} / {ImportTotalLinks}";
+
+        public string QueueStatusText
+        {
+            get
+            {
+                if (Videos.Any())
+                {
+                    return $"{Videos.Count(v => v.Success)} / {Videos.Count}";
+                }
+                return "0 / 0";
+            }
+        }
+
+        [ObservableProperty]
         [AlsoNotifyChangeFor(nameof(ResolutionsAvailable))]
         private bool getMP4 = true;
 
@@ -139,7 +167,6 @@ namespace OnionMedia.Core.ViewModels
             }
         }
 
-        private readonly StringBuilder sb = new();
         private string previouslySelected;
         private string selectedQuality;
 
@@ -149,21 +176,35 @@ namespace OnionMedia.Core.ViewModels
             set
             {
                 if (selectedQuality == value) return;
-
-                if (previouslySelected == null)
+                
+                selectedQuality = value;
+                if (!string.IsNullOrEmpty(selectedQuality))
                 {
-                    selectedQuality = value;
                     previouslySelected = selectedQuality;
                 }
-                else
-                {
-                    sb.Append(selectedQuality);
-                    previouslySelected = sb.ToString();
-                    selectedQuality = value;
-                    sb.Clear();
-                }
-
+                
                 OnPropertyChanged();
+            }
+        }
+
+        private void UpdateResolutions()
+        {
+            Resolutions = new ObservableCollection<string>(DownloaderMethods.GetResolutions(Videos));
+            OnPropertyChanged(nameof(Resolutions));
+            OnPropertyChanged(nameof(ResolutionsAvailable));
+
+            //TODO Filter videos without QualityLabels
+            if (!string.IsNullOrEmpty(previouslySelected))
+                SelectedQuality = previouslySelected;
+            else if (Resolutions.Any())
+                SelectedQuality = Resolutions[0];
+            else
+                SelectedQuality = null;
+
+            // Ensure selection if resolutions exist but nothing is selected
+            if (Resolutions.Any() && string.IsNullOrEmpty(SelectedQuality))
+            {
+                SelectedQuality = Resolutions[0];
             }
         }
 
@@ -258,17 +299,8 @@ namespace OnionMedia.Core.ViewModels
                 if (urlClone == SearchTerm)
                     SearchTerm = string.Empty;
 
-                Resolutions = new ObservableCollection<string>(DownloaderMethods.GetResolutions(Videos));
-                OnPropertyChanged(nameof(Resolutions));
-                OnPropertyChanged(nameof(ResolutionsAvailable));
-
-                //TODO Filter videos without QualityLabels
-                if (!string.IsNullOrEmpty(previouslySelected))
-                    SelectedQuality = previouslySelected;
-                else if (Resolutions.Any())
-                    SelectedQuality = Resolutions[0];
-                else
-                    SelectedQuality = null;
+                OnPropertyChanged(nameof(QueueStatusText));
+                UpdateResolutions();
 
                 ScanVideoCount--;
                 OnPropertyChanged(nameof(QueueIsEmpty));
@@ -427,7 +459,243 @@ namespace OnionMedia.Core.ViewModels
             }
         }
 
-		private void AddVideos(IEnumerable<StreamItemModel> videos)
+		[ICommand]
+        private async Task LoadFromFileAsync()
+        {
+            if (IsImporting) return;
+            var path = await dialogService.ShowSingleFilePickerDialogAsync(DirectoryLocation.Documents);
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                return;
+
+            var lines = await File.ReadAllLinesAsync(path);
+            await ProcessLinksAsync(lines);
+        }
+
+        [ICommand]
+        private async Task PasteFromClipboardAsync()
+        {
+            if (IsImporting) return;
+            var text = await ClipboardService.GetTextAsync();
+            if (string.IsNullOrWhiteSpace(text))
+                return;
+
+            var lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            await ProcessLinksAsync(lines);
+        }
+
+        private CancellationTokenSource importCancellationTokenSource;
+
+        [ICommand]
+        private void StopImport()
+        {
+            if (importCancellationTokenSource != null && !importCancellationTokenSource.IsCancellationRequested)
+            {
+                importCancellationTokenSource.Cancel();
+                IsImporting = false; // Immediately update UI
+            }
+        }
+
+        private async Task ProcessLinksAsync(IEnumerable<string> links)
+        {
+            if (IsImporting) return;
+
+            // Pre-filter: Valid URL format AND not already in queue
+            var validLinks = links
+                .Where(l => !string.IsNullOrWhiteSpace(l) && Regex.IsMatch(l.Trim(), GlobalResources.URLREGEX))
+                .Select(l => l.Trim())
+                .Distinct()
+                .Where(url => !Videos.Any(v => v.Video.Url == url)) // Check for existing
+                .ToList();
+
+            if (!validLinks.Any())
+            {
+                await dialogService.ShowInfoDialogAsync("Error", "No new valid links found.", "OK");
+                return;
+            }
+
+            IsImporting = true;
+            ScanVideoCount++;
+            importCancellationTokenSource = new CancellationTokenSource();
+            var token = importCancellationTokenSource.Token;
+
+            // Initialize total links BEFORE starting the loop
+            ImportTotalLinks = validLinks.Count;
+            ImportProcessedLinks = 0;
+            OnPropertyChanged(nameof(ImportProgress));
+            OnPropertyChanged(nameof(ImportProgressText));
+
+            int addedCount = 0;
+            int skippedCount = 0;
+            List<(string Url, string Error)> errors = new();
+
+            try
+            {
+                using SemaphoreSlim semaphore = new(10); 
+                List<Task> tasks = new();
+
+                foreach (var url in validLinks)
+                {
+                    if (token.IsCancellationRequested) break;
+
+                    await semaphore.WaitAsync(token);
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            if (token.IsCancellationRequested) return;
+
+                            RunResult<VideoData> data = null;
+                            // Retry logic: 3 attempts
+                            for (int i = 0; i < 3; i++)
+                            {
+                                if (token.IsCancellationRequested) break;
+                                data = await DownloaderMethods.downloadClient.RunVideoDataFetch(url);
+                                if (data.Success) break;
+                                try { await Task.Delay(500 * (i + 1), token); } catch (OperationCanceledException) { break; }
+                            }
+
+                            if (token.IsCancellationRequested) return;
+
+                            if (data != null && data.Success)
+                            {
+                                var video = new StreamItemModel(data);
+                                video.Video.Url = url;
+
+                                bool duplicate = false;
+                                dispatcher.Enqueue(() =>
+                                {
+                                    if (Videos.Any(v => v.Video.ID == video.Video.ID))
+                                    {
+                                        duplicate = true;
+                                    }
+                                    else
+                                    {
+                                        Videos.Add(video);
+                                        OnPropertyChanged(nameof(QueueStatusText));
+                                        video.ProgressChangedEventHandler += OnProgressChanged;
+                                        Interlocked.Increment(ref addedCount);
+                                    }
+                                });
+                                
+                                if(duplicate) Interlocked.Increment(ref skippedCount);
+                            }
+                            else
+                            {
+                                Interlocked.Increment(ref skippedCount);
+                                string errorMsg = data != null ? string.Join(", ", data.ErrorOutput) : "Unknown error";
+                                lock(errors) errors.Add((url, errorMsg));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            if (!token.IsCancellationRequested)
+                            {
+                                Interlocked.Increment(ref skippedCount);
+                                lock(errors) errors.Add((url, ex.Message));
+                            }
+                        }
+                        finally
+                        {
+                            Interlocked.Increment(ref importProcessedLinks);
+                            dispatcher.Enqueue(() =>
+                            {
+                                OnPropertyChanged(nameof(ImportProcessedLinks));
+                                OnPropertyChanged(nameof(ImportProgress));
+                                OnPropertyChanged(nameof(ImportProgressText));
+                            });
+                            semaphore.Release();
+                        }
+                    }, token));
+                }
+
+                try { await Task.WhenAll(tasks); } catch (OperationCanceledException) { }
+                
+                string message = $"Added: {addedCount}\nSkipped: {skippedCount}";
+                if (token.IsCancellationRequested) message += "\n(Import stopped)";
+
+                bool hasErrors = errors.Any();
+                
+                if (hasErrors)
+                {
+                    message += $"\n\nErrors ({errors.Count}):\n{string.Join("\n", errors.Select(e => $"{e.Url}: {e.Error}").Take(5))}";
+                    if (errors.Count > 5) message += "\n...";
+                }
+                
+                if (hasErrors)
+                {
+                    bool? result = await dialogService.ShowInteractionDialogAsync("Import Complete", message, "OK", "Copy Failed URLs", null);
+                    if (result == false) // "Copy Failed URLs"
+                    {
+                        await ClipboardService.SetTextAsync(string.Join(Environment.NewLine, errors.Select(e => e.Url)));
+                    }
+                }
+                else
+                {
+                    await dialogService.ShowInfoDialogAsync("Import Complete", message, "OK");
+                }
+
+                // Update resolutions after mass import
+                Resolutions = new ObservableCollection<string>(DownloaderMethods.GetResolutions(Videos));
+                OnPropertyChanged(nameof(Resolutions));
+                OnPropertyChanged(nameof(ResolutionsAvailable));
+                
+                // FORCE selection if empty
+                if (Resolutions.Any() && (string.IsNullOrEmpty(SelectedQuality) || !Resolutions.Contains(SelectedQuality)))
+                {
+                    SelectedQuality = Resolutions[0];
+                }
+
+                // If resolutions are still empty, try to fetch them again for the selected video if exists
+                if (!Resolutions.Any() && SelectedVideo != null)
+                {
+                    var singleRes = DownloaderMethods.GetResolutions(new[] { SelectedVideo });
+                    if (singleRes.Any())
+                    {
+                        Resolutions = new ObservableCollection<string>(singleRes);
+                        OnPropertyChanged(nameof(Resolutions));
+                        OnPropertyChanged(nameof(ResolutionsAvailable));
+                        SelectedQuality = Resolutions[0];
+                    }
+                }
+
+                // Fallback: If still empty but we have videos, assume highest quality and force update
+                if (!Resolutions.Any() && Videos.Any())
+                {
+                    // Trigger a re-evaluation of resolutions from the first video
+                    var firstVideo = Videos.FirstOrDefault();
+                    if (firstVideo != null)
+                    {
+                        var res = DownloaderMethods.GetResolutions(new[] { firstVideo });
+                        if (res.Any())
+                        {
+                            Resolutions = new ObservableCollection<string>(res);
+                            OnPropertyChanged(nameof(Resolutions));
+                            OnPropertyChanged(nameof(ResolutionsAvailable));
+                            SelectedQuality = Resolutions[0];
+                        }
+                    }
+                }
+
+                OnPropertyChanged(nameof(QueueStatusText));
+                OnPropertyChanged(nameof(QueueIsEmpty));
+                OnPropertyChanged(nameof(QueueIsNotEmpty));
+            }
+            catch (OperationCanceledException) { }
+            finally
+            {
+                ScanVideoCount--;
+                IsImporting = false;
+                importCancellationTokenSource?.Dispose();
+                importCancellationTokenSource = null;
+                
+                ImportTotalLinks = 0;
+                ImportProcessedLinks = 0;
+                OnPropertyChanged(nameof(ImportProgress));
+                OnPropertyChanged(nameof(ImportProgressText));
+            }
+        }
+
+        private void AddVideos(IEnumerable<StreamItemModel> videos)
         {
             if (videos == null) throw new ArgumentNullException(nameof(videos));
             if (!videos.Any()) return;
@@ -437,6 +705,8 @@ namespace OnionMedia.Core.ViewModels
             {
                 lock (Videos)
                     Videos.AddRange(videos.Where(video => !Videos.Any(v => video.Video.ID == v.Video.ID)));
+
+                OnPropertyChanged(nameof(QueueStatusText));
 
                 foreach (var video in Videos)
                     video.ProgressChangedEventHandler += OnProgressChanged;
@@ -480,14 +750,13 @@ namespace OnionMedia.Core.ViewModels
                 {
                     try
                     {
-                        var video = await DownloaderMethods.downloadClient.RunVideoDataFetch(url);
+                        var video = await DownloaderMethods.downloadClient.RunVideoDataFetch(url, ct: cToken);
 
-                        /*TODO: Video fetch logging for playlists
-                        if(!video.Success)
+                        // Video fetch logging for playlists
+                        if (!video.Success)
                         {
-                            VideoFetchingErrors.Add(video.ErrorOutput);
-						}
-                        */
+                            dispatcher.Enqueue(() => VideoFetchingErrors.Add(video.ErrorOutput));
+                        }
 
                         StreamItemModel item = new(video);
                         item.Video.Url = url;
@@ -590,6 +859,9 @@ namespace OnionMedia.Core.ViewModels
             CanceledAll += (o, e) => canceledAll = true;
             items.Where(i => i != null && videos.Contains(i)).ForEach(i => i.SetProgressToDefault());
             items.ForEach(v => v.QualityLabel = qualityLabel);
+            
+            List<StreamItemModel> failedVideos = new();
+
             foreach (var video in items)
             {
                 if (canceledAll || !videos.Contains(video) || video.DownloadState == DownloadState.IsCancelled) continue;
@@ -601,12 +873,16 @@ namespace OnionMedia.Core.ViewModels
                 {
                     loadedVideo = (StreamItemModel)o;
                     finishedCount++;
+                    OnPropertyChanged(nameof(QueueStatusText));
                 };
 
                 tasks.Add(DownloaderMethods.DownloadStreamAsync(video, getMp4, path).ContinueWith(t =>
                 {
                     queue.Release();
                     if (t.Exception?.InnerException == null) return;
+                    
+                    // Track failure
+                    lock(failedVideos) failedVideos.Add(video);
 
                     switch (t.Exception?.InnerException)
                     {
@@ -650,6 +926,34 @@ namespace OnionMedia.Core.ViewModels
 		            await GlobalResources.DisplayFileSaveErrorDialog(unauthorizedAccessExceptions,
 			            directoryNotFoundExceptions, notEnoughSpaceExceptions);
 	            }
+                
+                // Post-download summary for failed videos
+                if (failedVideos.Any() && !canceledAll)
+                {
+                    string failedMsg = $"{failedVideos.Count} video(s) failed to download.";
+                    bool showDialog = true;
+                    while (showDialog)
+                    {
+                        bool? result = await dialogService.ShowInteractionDialogAsync("Download Completed with Errors", failedMsg, "Retry Failed", "Copy Failed Links", "Close");
+                        
+                        if (result == true) // Retry
+                        {
+                             showDialog = false;
+                             failedVideos.ForEach(v => v.SetProgressToDefault());
+                             await DownloadVideosAsync(failedVideos, getMp4, qualityLabel);
+                        }
+                        else if (result == false) // Copy
+                        {
+                             string failedUrls = string.Join(Environment.NewLine, failedVideos.Select(v => v.Video.Url));
+                             await ClipboardService.SetTextAsync(failedUrls);
+                             // Loop continues, dialog re-appears
+                        }
+                        else // Close
+                        {
+                             showDialog = false;
+                        }
+                    }
+                }
 
 	            taskbarProgressService?.UpdateState(typeof(YouTubeDownloaderViewModel), ProgressBarState.None);
 
@@ -741,6 +1045,14 @@ namespace OnionMedia.Core.ViewModels
         {
             CancelAll();
             Videos.Clear();
+            // Reset Resolutions
+            Resolutions.Clear();
+            SelectedQuality = null;
+            
+            OnPropertyChanged(nameof(QueueStatusText));
+            OnPropertyChanged(nameof(QueueIsEmpty));
+            OnPropertyChanged(nameof(QueueIsNotEmpty));
+            OnPropertyChanged(nameof(ResolutionsAvailable));
         }
 
         public int DownloadProgress
@@ -750,7 +1062,7 @@ namespace OnionMedia.Core.ViewModels
                 if (Videos.Any() && Videos.All(v => v.ProgressInfo.DownloadState == YoutubeDLSharp.DownloadState.Success))
                     return 100;
 
-                int progress = 0;
+                double progress = 0;
                 int videocount = Videos.Count;
 
                 //Get progress from all videos
@@ -760,7 +1072,7 @@ namespace OnionMedia.Core.ViewModels
                 if (videocount == 0)
                     return 0;
 
-                return progress / videocount;
+                return (int)(progress / videocount);
             }
         }
 
@@ -782,6 +1094,7 @@ namespace OnionMedia.Core.ViewModels
             OnPropertyChanged(nameof(QueueIsEmpty));
             OnPropertyChanged(nameof(QueueIsNotEmpty));
             OnPropertyChanged(nameof(ReadyToDownload));
+            OnPropertyChanged(nameof(QueueStatusText));
         }
 
         public bool MultipleVideos => Videos.Count > 1;

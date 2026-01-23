@@ -15,6 +15,24 @@
   <img src="placeholder.png" width="600">
 </p>
 
+**Installation Guide:**
+1. Download the latest release (`.zip`) and extract it.
+2. Open the extracted folder (e.g., `OnionMedia..`).
+3. Double-click on `install.bat`.
+4. A PowerShell window will open. Follow the instructions (you may need to press Enter or type 'Y' to proceed with certificate installation).
+
+## Development Setup
+
+If you want to build this project from source, you need to download the required external binaries (FFmpeg and yt-dlp) first.
+
+1.  Clone the repository.
+2.  Run the `setup_dependencies.ps1` script in the root folder. You can do this by opening PowerShell in the root directory and running:
+    ```powershell
+    PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& '.\setup_dependencies.ps1'"
+    ```
+3.  Open `OnionMedia.sln` in Visual Studio 2022.
+4.  Build and Run.
+
 ## 
 You use Linux? Check out [OnionMedia X](https://github.com/onionware-github/OnionMedia-X)!
 

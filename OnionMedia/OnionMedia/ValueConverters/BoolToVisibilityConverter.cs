@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2022 Jaden Phil Nebel (Onionware)
  *
  * This file is part of OnionMedia.
@@ -24,10 +24,13 @@ namespace OnionMedia.ValueConverters
         /// <param name="parameter">When parameter is true, invert the result.</param>
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (parameter == null) throw new ArgumentNullException(nameof(parameter));
-            if (value is not bool) throw new ArgumentException("Input is not a bool.");
-            if (!bool.TryParse(parameter.ToString(), out bool inverseResult))
-                throw new ArgumentException("Input is not a bool.");
+            if (value is not bool) return Visibility.Visible;
+            
+            bool inverseResult = false;
+            if (parameter != null)
+            {
+                bool.TryParse(parameter.ToString(), out inverseResult);
+            }
 
             if ((bool)value)
             {

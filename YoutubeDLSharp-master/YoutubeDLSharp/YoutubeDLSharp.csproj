@@ -1,14 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0-windows10.0.19041.0</TargetFrameworks>
     <Authors>Bluegrams</Authors>
     <Description>A simple .NET wrapper library for youtube-dl.</Description>
     <Copyright>© 2022 Bluegrams</Copyright>
     <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Bluegrams/YoutubeDLSharp</PackageProjectUrl>
     <PackageTags>youtube video download youtube-dl yt-dlp</PackageTags>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>

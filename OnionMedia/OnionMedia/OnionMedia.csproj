@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
@@ -74,7 +74,7 @@
 	<ItemGroup>
 		<Content Include="Data\codecs.json" />
 		<Content Include="Data\ConversionPresets.json" />
-		<Content Include="ExternalBinaries\ffmpeg+yt-dlp\binaries\deno.exe" />
+
 		<Content Include="ExternalBinaries\ffmpeg+yt-dlp\binaries\ffmpeg.exe" />
 		<Content Include="ExternalBinaries\ffmpeg+yt-dlp\binaries\ffprobe.exe" />
 		<Content Include="ExternalBinaries\ffmpeg+yt-dlp\binaries\yt-dlp-license-information.txt" />

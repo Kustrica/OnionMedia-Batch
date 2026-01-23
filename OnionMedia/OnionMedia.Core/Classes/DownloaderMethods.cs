@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2022 Jaden Phil Nebel (Onionware)
  *
  * This file is part of OnionMedia.
@@ -43,7 +43,7 @@ namespace OnionMedia.Core.Classes
 
 		public static readonly YoutubeClient youtube = new();
 
-		public static readonly YoutubeDL downloadClient = new(5)
+		public static readonly YoutubeDL downloadClient = new(10)
 		{
 			FFmpegPath = pathProvider.FFmpegPath,
 			YoutubeDLPath = pathProvider.YtDlPath,

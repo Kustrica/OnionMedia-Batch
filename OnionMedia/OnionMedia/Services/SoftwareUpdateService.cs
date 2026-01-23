@@ -1,4 +1,4 @@
-﻿using OnionMedia.Core.Services;
+using OnionMedia.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

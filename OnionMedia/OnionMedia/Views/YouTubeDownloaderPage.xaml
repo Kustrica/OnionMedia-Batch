@@ -1,4 +1,4 @@
-﻿<!--
+<!--
  * Copyright (C) 2022 Jaden Phil Nebel (Onionware)
  *
  * This file is part of OnionMedia.
@@ -269,22 +269,36 @@
                         </TeachingTip>
                     </Grid>
 
+                    <Grid Margin="0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Button Content="Load from File" Command="{x:Bind ViewModel.LoadFromFileCommand}" HorizontalAlignment="Stretch" Margin="0,0,5,0"/>
+                        <Button Grid.Column="1" Content="Paste from Clipboard" Command="{x:Bind ViewModel.PasteFromClipboardCommand}" HorizontalAlignment="Stretch" Margin="5,0,0,0"/>
+                    </Grid>
 
-                    <StackPanel>
-                        <TextBlock x:Uid="/DownloaderPage/selectFileFormat" Margin="0,10" FontWeight="SemiBold" FontSize="16"/>
-                        <RadioButton GroupName="FormatSelection" x:Uid="/DownloaderPage/Mp3"/>
-                        <RadioButton GroupName="FormatSelection" x:Uid="/DownloaderPage/Mp4" IsChecked="{x:Bind ViewModel.GetMP4, Mode=TwoWay}"/>
-                    </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock x:Uid="/DownloaderPage/selectFileFormat" Margin="0,10" FontWeight="SemiBold" FontSize="16"/>
+                            <RadioButton GroupName="FormatSelection" x:Uid="/DownloaderPage/Mp3"/>
+                            <RadioButton GroupName="FormatSelection" x:Uid="/DownloaderPage/Mp4" IsChecked="{x:Bind ViewModel.GetMP4, Mode=TwoWay}"/>
+                        </StackPanel>
 
-                    <StackPanel Visibility="{x:Bind ViewModel.ResolutionsAvailable}">
-                        <TextBlock x:Uid="/DownloaderPage/selectQuality" Margin="0,0,0,5" FontWeight="SemiBold" FontSize="16"/>
-                        <TextBlock x:Uid="/DownloaderPage/upTo" Foreground="Gray" Visibility="{x:Bind ViewModel.MultipleVideos}"/>
-                        <ComboBox Name="qualitySelection"
-                              Margin="0,2"
-                              ItemsSource="{x:Bind ViewModel.Resolutions}"
-                              SelectedItem="{x:Bind ViewModel.SelectedQuality, Mode=TwoWay}"
-                              IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty}"/>
-                    </StackPanel>
+                        <StackPanel Grid.Column="1" Visibility="{x:Bind ViewModel.GetMP4, Mode=OneWay}" VerticalAlignment="Top" Margin="5,0,0,0">
+                            <TextBlock Text="Max Quality (All)" Margin="0,10,0,5" FontWeight="SemiBold" FontSize="16"/>
+                            <TextBlock x:Uid="/DownloaderPage/upTo" Foreground="Gray" Visibility="{x:Bind ViewModel.MultipleVideos}"/>
+                            <ComboBox Name="qualitySelection"
+                                  Margin="0,2"
+                                  ItemsSource="{x:Bind ViewModel.Resolutions}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedQuality, Mode=TwoWay}"
+                                  IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty}" MinWidth="120" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                    </Grid>
 
                     <!-- TRIM VIDEO -->
                     <TextBlock x:Uid="/DownloaderPage/shortVideo" Margin="0,5,0,0" HorizontalAlignment="Left" FontWeight="SemiBold" FontSize="16" Visibility="{x:Bind ViewModel.QueueIsEmpty, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}"/>
@@ -328,8 +342,24 @@
                             </Grid.RowDefinitions>
 
 
-                            <TextBlock x:Uid="/DownloaderPage/currentPlaylist" FontSize="18" FontWeight="SemiBold" Foreground="Black" Margin="3" Grid.Column="1"/>
+                            <Grid Grid.Column="1" Margin="3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                    <TextBlock x:Uid="/DownloaderPage/currentPlaylist" FontSize="18" FontWeight="SemiBold" Foreground="Black" VerticalAlignment="Center"/>
+                                </StackPanel>
 
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                    <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="5,2" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind ViewModel.QueueStatusText, Mode=OneWay}" Foreground="Black" FontSize="14"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                            
                             <ListView Name="videoQueue" Grid.Column="1" Grid.Row="1"
                                   ItemsSource="{x:Bind ViewModel.Videos}" CornerRadius="10"
                                   Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
@@ -425,6 +455,8 @@
                                     </Grid>
                                 </ListView.Footer>
                             </ListView>
+                            
+
                         </Grid>
 
                         <Grid Margin="2,5">
@@ -475,7 +507,7 @@
                                     </StackPanel>
                                     <SplitButton.Flyout>
                                         <Flyout x:Name="removeBtnFlyout" Placement="Bottom">
-                                            <Button Margin="-10" Click="RemoveAll_Clicked" Command="{x:Bind ViewModel.RemoveAllCommand}" IsEnabled="{x:Bind ViewModel.QueueIsEmpty, Converter={StaticResource InverseBoolConverter}}">
+                                            <Button Margin="-10" Click="RemoveAll_Clicked" Command="{x:Bind ViewModel.RemoveAllCommand}" IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty}">
                                                 <StackPanel Orientation="Horizontal" Spacing="5">
                                                     <SymbolIcon Symbol="Cancel"/>
                                                     <TextBlock x:Uid="removeAll"/>
@@ -499,6 +531,20 @@
                             <StackPanel x:Name="progressBarPanel" Grid.Column="1" VerticalAlignment="Center" Visibility="{x:Bind ViewModel.DownloadFileCommand.IsRunning}">
                                 <TextBlock x:Uid="/DownloaderPage/progress" Margin="3"/>
                                 <ProgressBar Margin="3" Value="{x:Bind ViewModel.DownloadProgress}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Visibility="{x:Bind ViewModel.IsImporting, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="{x:Bind ViewModel.ImportProgressText, Mode=OneWay}" Margin="3"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ProgressBar Margin="3" Value="{x:Bind ViewModel.ImportProgress, Mode=OneWay}" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Margin="5,0,0,0" Command="{x:Bind ViewModel.StopImportCommand}" IsEnabled="{x:Bind ViewModel.IsImporting, Mode=OneWay}" Padding="5" Height="30" VerticalAlignment="Center">
+                                        <SymbolIcon Symbol="Stop"/>
+                                    </Button>
+                                </Grid>
                             </StackPanel>
                         </Grid>
                     </StackPanel>

@@ -15,8 +15,16 @@ if (-not (Test-Path $binariesDir)) {
 $ffmpegPath = Join-Path $binariesDir "ffmpeg.exe"
 $ffprobePath = Join-Path $binariesDir "ffprobe.exe"
 
-if ((-not (Test-Path $ffmpegPath)) -or (-not (Test-Path $ffprobePath))) {
-    Write-Host "FFmpeg or FFprobe not found. Downloading..." -ForegroundColor Cyan
+function Is-Placeholder($path) {
+    if (-not (Test-Path $path)) { return $true }
+    $fileInfo = Get-Item $path
+    # If file is smaller than 1MB, treat it as a placeholder/dummy
+    if ($fileInfo.Length -lt 1MB) { return $true }
+    return $false
+}
+
+if ((Is-Placeholder $ffmpegPath) -or (Is-Placeholder $ffprobePath)) {
+    Write-Host "FFmpeg or FFprobe not found (or is a placeholder). Downloading..." -ForegroundColor Cyan
     
     $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.zip"
     $zipPath = Join-Path $env:TEMP "ffmpeg-release-full.zip"
@@ -58,8 +66,8 @@ $ytdlpPath = Join-Path $binariesDir "yt-dlp.exe"
 # Always check for update or download if missing
 # Note: Since the user might want to keep a stable version, we only download if missing. 
 # But for "auto install" usually implies "ensure it exists".
-if (-not (Test-Path $ytdlpPath)) {
-    Write-Host "yt-dlp not found. Downloading..." -ForegroundColor Cyan
+if (Is-Placeholder $ytdlpPath) {
+    Write-Host "yt-dlp not found (or is a placeholder). Downloading..." -ForegroundColor Cyan
     $ytdlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
     
     try {
