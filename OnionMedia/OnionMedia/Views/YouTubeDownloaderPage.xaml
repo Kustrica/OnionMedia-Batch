@@ -519,7 +519,7 @@
 
                                 <Button Margin="2"
                                     Command="{x:Bind ViewModel.CancelAllCommand}"
-                                    Visibility="{x:Bind ViewModel.DownloadFileCommand.IsRunning}"
+                                    Visibility="{x:Bind ViewModel.CanCancelOperation, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                                     VerticalAlignment="Stretch">
                                     <StackPanel>
                                         <SymbolIcon Symbol="Cancel"/>
@@ -541,9 +541,6 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <ProgressBar Margin="3" Value="{x:Bind ViewModel.ImportProgress, Mode=OneWay}" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="1" Margin="5,0,0,0" Command="{x:Bind ViewModel.StopImportCommand}" IsEnabled="{x:Bind ViewModel.IsImporting, Mode=OneWay}" Padding="5" Height="30" VerticalAlignment="Center">
-                                        <SymbolIcon Symbol="Stop"/>
-                                    </Button>
                                 </Grid>
                             </StackPanel>
                         </Grid>

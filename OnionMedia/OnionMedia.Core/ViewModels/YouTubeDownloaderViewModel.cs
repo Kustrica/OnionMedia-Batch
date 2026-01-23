@@ -97,6 +97,7 @@ namespace OnionMedia.Core.ViewModels
         public event EventHandler<bool> DownloadDone;
 
         [ObservableProperty]
+        [AlsoNotifyChangeFor(nameof(CanCancelOperation))]
         private bool isImporting;
 
         [ObservableProperty]
@@ -1035,6 +1036,11 @@ namespace OnionMedia.Core.ViewModels
         [ICommand]
         private void CancelAll()
         {
+            if (IsImporting)
+            {
+                StopImport();
+            }
+
             Videos.ForEach(v => v?.RaiseCancel());
             CanceledAll?.Invoke(this, EventArgs.Empty);
         }
@@ -1088,6 +1094,8 @@ namespace OnionMedia.Core.ViewModels
         public bool ReadyToDownload => QueueIsNotEmpty && ScanVideoCount == 0;
         public bool AnyResults => SearchResults.Any();
         public bool AddingVideo => AddVideoCommand.IsRunning || AddSearchedVideo.IsRunning;
+        public bool CanCancelOperation => DownloadFileCommand.IsRunning || IsImporting;
+
         private void UpdateProgressStateProperties()
         {
             OnPropertyChanged(nameof(AddingVideo));
@@ -1095,6 +1103,7 @@ namespace OnionMedia.Core.ViewModels
             OnPropertyChanged(nameof(QueueIsNotEmpty));
             OnPropertyChanged(nameof(ReadyToDownload));
             OnPropertyChanged(nameof(QueueStatusText));
+            OnPropertyChanged(nameof(CanCancelOperation));
         }
 
         public bool MultipleVideos => Videos.Count > 1;
