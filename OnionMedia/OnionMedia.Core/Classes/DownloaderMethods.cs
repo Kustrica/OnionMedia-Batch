@@ -33,6 +33,7 @@ using FFMpegCore;
 using OnionMedia.Core.Services;
 using YoutubeExplode.Videos;
 using OnionMedia.Core.ViewModels.Dialogs;
+using OnionMedia.Core.Enums;
 
 namespace OnionMedia.Core.Classes
 {
@@ -59,7 +60,7 @@ namespace OnionMedia.Core.Classes
 			_ => string.Empty
 		};
 
-		public static async Task DownloadStreamAsync(StreamItemModel stream, bool getMP4, string customOutputDirectory = null)
+		public static async Task DownloadStreamAsync(StreamItemModel stream, DownloadMode downloadMode, string customOutputDirectory = null)
 		{
 			if (stream == null)
 				throw new ArgumentNullException(nameof(stream));
@@ -100,16 +101,22 @@ namespace OnionMedia.Core.Classes
 					ytOptions.LimitRate = (long)(AppSettings.Instance.MaxDownloadSpeed * 1000000 / 8);
 
 				//Audiodownload
-				if (!getMP4)
+				if (downloadMode == DownloadMode.Audio)
 				{
 					tempfile = await RunAudioDownloadAndConversionAsync(stream, ytOptions, isShortened, TimeSpan.Zero, cToken);
 					itemType = Enums.ItemType.audio;
 				}
-				//Videodownload
+				//Videodownload or GIF
 				else
 				{
 					tempfile = await RunVideoDownloadAndConversionAsync(stream, ytOptions, isShortened, autoConvertToH264, TimeSpan.Zero, cToken);
 					itemType = Enums.ItemType.video;
+
+                    if (downloadMode == DownloadMode.Gif && Path.GetExtension(tempfile).ToLower() != ".gif")
+                    {
+                        stream.Converting = true;
+                        tempfile = await ConvertToGifAsync(tempfile, stream, cToken);
+                    }
 				}
 			}
 			catch (Exception ex)
@@ -522,9 +529,52 @@ namespace OnionMedia.Core.Classes
 		}
 
 		/// <summary>
+		/// Converts a file to GIF and returns the new path
+		/// </summary>
+		private static async Task<string> ConvertToGifAsync(string inputfile, StreamItemModel stream, CancellationToken cancellationToken = default)
+		{
+			string outputpath = Path.ChangeExtension(inputfile, ".gif");
+			for (int i = 2; File.Exists(outputpath); i++)
+				outputpath = Path.ChangeExtension(inputfile, $"_{i}.gif");
+
+			var input = new InputFile(inputfile);
+			Engine ffmpeg = new(pathProvider.FFmpegPath);
+
+			// Get metadata to know duration
+			var meta = await ffmpeg.GetMetaDataAsync(input, cancellationToken);
+			
+			// Use palettegen and paletteuse for high quality GIF
+			// "fps=15,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
+            // We use 15 fps to keep size reasonable, but can be adjusted.
+			
+			StringBuilder argBuilder = new();
+			argBuilder.Append($"-i \"{inputfile}\" ");
+			argBuilder.Append("-vf \"fps=15,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" ");
+			argBuilder.Append("-loop 0 ");
+			argBuilder.Append($"\"{outputpath}\"");
+
+			if (stream != null)
+			{
+				ffmpeg.Complete += async (o, e) => await dispatcher.EnqueueAsync(() => stream.ConversionProgress = 100);
+				ffmpeg.Error += async (o, e) => await dispatcher.EnqueueAsync(() => 
+				{
+					stream.ConversionProgress = 0;
+					Debug.WriteLine(e.Exception);
+				});
+				ffmpeg.Progress += async (o, e) => await dispatcher.EnqueueAsync(() => stream.ConversionProgress = (int)(e.ProcessedDuration / meta.Duration * 100));
+			}
+
+			await ffmpeg.ExecuteAsync(argBuilder.ToString(), cancellationToken);
+            
+            // Try to delete the input video file as it was a temporary intermediate file
+            try { if(File.Exists(inputfile)) File.Delete(inputfile); } catch { }
+
+			return outputpath;
+		}
+
+		/// <summary>
 		/// Converts a file to MP4 (with H264 codec if enabled in settings) and returns the new path
 		/// </summary>
-		/// <returns>The path of the converted file</returns>
 		private static async Task<string> ConvertToMp4Async(string inputfile, TimeSpan startTime = default, TimeSpan endTime = default, StreamItemModel stream = null, Size resolution = default, IMediaAnalysis videoMeta = null, CancellationToken cancellationToken = default)
 		{
 			string outputpath = Path.ChangeExtension(inputfile, ".converted.mp4");

@@ -1,11 +1,10 @@
-﻿using System;
-
+using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 
 namespace OnionMedia.Helpers
 {
-    public class EnumToBooleanConverter : IValueConverter
+    public partial class EnumToBooleanConverter : IValueConverter
     {
         public EnumToBooleanConverter()
         {
@@ -13,29 +12,46 @@ namespace OnionMedia.Helpers
 
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (parameter is string enumString)
+            if (parameter is string enumString && value != null && value.GetType().IsEnum)
             {
-                if (!Enum.IsDefined(typeof(ElementTheme), value))
+                if (!Enum.IsDefined(value.GetType(), value))
                 {
-                    throw new ArgumentException("ExceptionEnumToBooleanConverterValueMustBeAnEnum");
+                    return false;
                 }
 
-                var enumValue = Enum.Parse(typeof(ElementTheme), enumString);
-
-                return enumValue.Equals(value);
+                try
+                {
+                    var enumValue = Enum.Parse(value.GetType(), enumString);
+                    return enumValue.Equals(value);
+                }
+                catch
+                {
+                    return false;
+                }
             }
 
-            throw new ArgumentException("ExceptionEnumToBooleanConverterParameterMustBeAnEnumName");
+            return false;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
             if (parameter is string enumString)
             {
-                return Enum.Parse(typeof(ElementTheme), enumString);
+                if (value is bool isChecked && isChecked)
+                {
+                    try
+                    {
+                        return Enum.Parse(targetType, enumString);
+                    }
+                    catch
+                    {
+                         return DependencyProperty.UnsetValue;
+                    }
+                }
+                return DependencyProperty.UnsetValue;
             }
 
-            throw new ArgumentException("ExceptionEnumToBooleanConverterParameterMustBeAnEnumName");
+            return DependencyProperty.UnsetValue;
         }
     }
 }

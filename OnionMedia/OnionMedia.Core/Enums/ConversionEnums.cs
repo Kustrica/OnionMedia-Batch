@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2022 Jaden Phil Nebel (Onionware)
  *
  * This file is part of OnionMedia.
@@ -25,4 +25,11 @@ public enum ItemType
 {
     video,
     audio
+}
+
+public enum DownloadMode
+{
+    Audio,
+    Video,
+    Gif
 }

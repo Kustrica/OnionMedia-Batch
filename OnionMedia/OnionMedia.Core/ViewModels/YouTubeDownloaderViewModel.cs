@@ -62,7 +62,7 @@ namespace OnionMedia.Core.ViewModels
 
             AddSearchedVideo = new(async item => await FillInfosAsync(item.Url), item => !DownloadFileCommand.IsRunning);
 
-            DownloadFileCommand = new(async qualityLabel => await DownloadVideosAsync(Videos, GetMP4, qualityLabel));
+            DownloadFileCommand = new(async qualityLabel => await DownloadVideosAsync(Videos, SelectedDownloadMode, qualityLabel));
 
             RemoveCommand = new(async index => await RemoveVideoAsync());
 
@@ -124,7 +124,7 @@ namespace OnionMedia.Core.ViewModels
 
         [ObservableProperty]
         [AlsoNotifyChangeFor(nameof(ResolutionsAvailable))]
-        private bool getMP4 = true;
+        private DownloadMode selectedDownloadMode = DownloadMode.Video;
 
         [ObservableProperty]
         private bool validUrl;
@@ -135,7 +135,7 @@ namespace OnionMedia.Core.ViewModels
         [ObservableProperty]
         private bool networkAvailable;
 
-        public bool ResolutionsAvailable => GetMP4 && Videos.Any() && Resolutions.Any();
+        public bool ResolutionsAvailable => SelectedDownloadMode != DownloadMode.Audio && Videos.Any() && Resolutions.Any();
 
         public bool VideoFetchingLogAvailable => VideoFetchingErrors.Any();
 
@@ -188,6 +188,29 @@ namespace OnionMedia.Core.ViewModels
             }
         }
 
+        [ICommand]
+        private void SetDownloadMode(string mode)
+        {
+            if (Enum.TryParse<DownloadMode>(mode, out var result))
+            {
+                SelectedDownloadMode = result;
+            }
+        }
+
+        private void OnSelectedDownloadModeChanged(DownloadMode value)
+        {
+            if (Resolutions == null) return;
+
+            if (value == DownloadMode.Gif && ResolutionsAvailable)
+            {
+                var res720 = Resolutions.FirstOrDefault(r => r != null && r.StartsWith("720p"));
+                if (res720 != null)
+                {
+                    SelectedQuality = res720;
+                }
+            }
+        }
+
         private void UpdateResolutions()
         {
             Resolutions = new ObservableCollection<string>(DownloaderMethods.GetResolutions(Videos));
@@ -197,6 +220,11 @@ namespace OnionMedia.Core.ViewModels
             //TODO Filter videos without QualityLabels
             if (!string.IsNullOrEmpty(previouslySelected))
                 SelectedQuality = previouslySelected;
+            else if (SelectedDownloadMode == DownloadMode.Gif && Resolutions.Any())
+            {
+                var res720 = Resolutions.FirstOrDefault(r => r.StartsWith("720p"));
+                SelectedQuality = res720 ?? Resolutions[0];
+            }
             else if (Resolutions.Any())
                 SelectedQuality = Resolutions[0];
             else
@@ -270,6 +298,25 @@ namespace OnionMedia.Core.ViewModels
 
                 ScanVideoCount++;
                 var data = await DownloaderMethods.downloadClient.RunVideoDataFetch(videolink);
+
+                // Handling for GIF/Direct downloads when yt-dlp fails to extract "video" metadata
+				if (!data.Success && SelectedDownloadMode == DownloadMode.Gif)
+				{
+                     // If the user selected GIF mode and yt-dlp failed, we assume they are trying to download a direct GIF file or similar asset.
+                     // We trust the user's intent and attempt to download the URL directly as a file.
+                     
+                     var dummyData = new VideoData
+                     {
+                         Title = "GIF Animation",
+                         Url = videolink,
+                         Formats = new [] { 
+                             new FormatData { Extension = "gif", Url = videolink } 
+                         }
+                     };
+                     
+                     // Recreate RunResult with success = true
+                     data = new RunResult<VideoData>(true, new string[0], dummyData);
+				}
 
 				if (!data.Success)
 				{
@@ -840,7 +887,7 @@ namespace OnionMedia.Core.ViewModels
         }
 
         private bool canceledAll = false;
-        private async Task DownloadVideosAsync(IList<StreamItemModel> videos, bool getMp4, string qualityLabel)
+        private async Task DownloadVideosAsync(IList<StreamItemModel> videos, DownloadMode downloadMode, string qualityLabel)
         {
             if (videos == null || !videos.Any())
                 throw new ArgumentException("videos is null or empty.");
@@ -885,7 +932,7 @@ namespace OnionMedia.Core.ViewModels
                     OnPropertyChanged(nameof(QueueStatusText));
                 };
 
-                tasks.Add(DownloaderMethods.DownloadStreamAsync(video, getMp4, path).ContinueWith(t =>
+                tasks.Add(DownloaderMethods.DownloadStreamAsync(video, downloadMode, path).ContinueWith(t =>
                 {
                     queue.Release();
                     if (t.Exception?.InnerException == null) return;
@@ -949,7 +996,7 @@ namespace OnionMedia.Core.ViewModels
                         {
                              showDialog = false;
                              failedVideos.ForEach(v => v.SetProgressToDefault());
-                             await DownloadVideosAsync(failedVideos, getMp4, qualityLabel);
+                             await DownloadVideosAsync(failedVideos, downloadMode, qualityLabel);
                         }
                         else if (result == false) // Copy
                         {
