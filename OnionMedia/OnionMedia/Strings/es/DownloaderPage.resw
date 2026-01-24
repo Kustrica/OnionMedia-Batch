@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -161,6 +161,9 @@
   </data>
   <data name="Mp4.Content" xml:space="preserve">
     <value>Vídeo</value>
+  </data>
+  <data name="Gif.Content" xml:space="preserve">
+    <value>GIF (desde vídeo)</value>
   </data>
   <data name="noInternetConnection.Text" xml:space="preserve">
     <value>No hay conexión a Internet</value>

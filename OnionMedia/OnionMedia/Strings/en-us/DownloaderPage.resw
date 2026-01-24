@@ -163,7 +163,7 @@
     <value>Video</value>
   </data>
   <data name="Gif.Content" xml:space="preserve">
-    <value>Animation (GIF)</value>
+    <value>GIF (from video)</value>
   </data>
   <data name="noInternetConnection.Text" xml:space="preserve">
     <value>No internet connection</value>
