@@ -32,12 +32,11 @@ If you want to build this project from source, you need to download the required
 
 1.  Clone the repository.
 2.  Run the `setup_dependencies.ps1` script in the root folder. You can do this by opening PowerShell in the root directory and running:
-3.  
     ```powershell
     PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& '.\setup_dependencies.ps1'"
     ```
-4.  Open `OnionMedia.sln` in Visual Studio 2022.
-5.  Build and Run.
+3.  Open `OnionMedia.sln` in Visual Studio 2022.
+4.  Build and Run.
 
 ## 
 ## 
