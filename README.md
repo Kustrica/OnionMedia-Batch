@@ -32,6 +32,7 @@ If you want to build this project from source, you need to download the required
 
 1.  Clone the repository.
 2.  Run the `setup_dependencies.ps1` script in the root folder. You can do this by opening PowerShell in the root directory and running:
+
     ```powershell
     PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& '.\setup_dependencies.ps1'"
     ```
