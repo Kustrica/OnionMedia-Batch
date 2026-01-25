@@ -10,6 +10,7 @@
 - Added a counter showing the number of downloaded links out of the added ones
 - Added support for downloading multiple videos from a file or clipboard
 - Added an import progress bar
+- Added GIF creation from video with selectable quality options
 
 ## New Features
 | Download Counter | Import Progress |
