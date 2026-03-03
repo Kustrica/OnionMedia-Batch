@@ -11,6 +11,8 @@
 - Added support for downloading multiple videos from a file or clipboard
 - Added an import progress bar
 - Added GIF creation from video with selectable quality options
+- Added Path Folder button on every page
+- Removed Geo-Restrictions: Reverted YoutubeExplode to a clean version (6.0.7) to remove the political blocking message 
 
 ## New Features
 | Download Counter | Import Progress |
