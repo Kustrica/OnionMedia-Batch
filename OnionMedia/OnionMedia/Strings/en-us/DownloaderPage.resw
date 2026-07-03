@@ -213,4 +213,82 @@
   <data name="viewLog.Text" xml:space="preserve">
     <value>Show log</value>
   </data>
+  <data name="cookieMenuNone.Text" xml:space="preserve">
+    <value>Don't use cookies</value>
+  </data>
+  <data name="cookieMenuBrowser.Text" xml:space="preserve">
+    <value>Browser cookies</value>
+  </data>
+  <data name="cookieMenuCustomKey.Text" xml:space="preserve">
+    <value>Custom key (from clipboard)…</value>
+  </data>
+  <data name="cookieMenuFile.Text" xml:space="preserve">
+    <value>Load cookies from file…</value>
+  </data>
+  <data name="cookieMenuPaste.Text" xml:space="preserve">
+    <value>Paste cookies (from clipboard)</value>
+  </data>
+  <data name="cookieMenuView.Text" xml:space="preserve">
+    <value>View cookies</value>
+  </data>
+  <data name="cookieViewerTitle" xml:space="preserve">
+    <value>Cookies</value>
+  </data>
+  <data name="cookieBtnDisabled" xml:space="preserve">
+    <value>Cookies</value>
+  </data>
+  <data name="cookieBtnFromBrowser" xml:space="preserve">
+    <value>Cookies from browser</value>
+  </data>
+  <data name="cookieBtnFromCustomKey" xml:space="preserve">
+    <value>Cookies from custom key</value>
+  </data>
+  <data name="cookieBtnFile" xml:space="preserve">
+    <value>Cookies from file</value>
+  </data>
+  <data name="cookieBtnPasted" xml:space="preserve">
+    <value>Pasted cookies</value>
+  </data>
+  <data name="cookieStatusDisabled" xml:space="preserve">
+    <value>Cookies are not used</value>
+  </data>
+  <data name="cookieStatusUsingBrowser" xml:space="preserve">
+    <value>Using cookies from {0}</value>
+  </data>
+  <data name="cookieStatusBrowserGeneric" xml:space="preserve">
+    <value>Using cookies from your browser</value>
+  </data>
+  <data name="cookieStatusFile" xml:space="preserve">
+    <value>Using cookies from a file</value>
+  </data>
+  <data name="cookieStatusPasted" xml:space="preserve">
+    <value>Using pasted cookies</value>
+  </data>
+  <data name="cookieDetailsBrowser" xml:space="preserve">
+    <value>Browser: {0}</value>
+  </data>
+  <data name="cookieDetailsFile" xml:space="preserve">
+    <value>File: {0}</value>
+  </data>
+  <data name="cookieDetailsDomains" xml:space="preserve">
+    <value>Domains: {0}</value>
+  </data>
+  <data name="cookieErrorInvalid" xml:space="preserve">
+    <value>The cookies appear to be invalid or expired. Cookie usage has been turned off.</value>
+  </data>
+  <data name="cookieErrorCustomKey" xml:space="preserve">
+    <value>That doesn't look like a valid browser key.</value>
+  </data>
+  <data name="cookieErrorFile" xml:space="preserve">
+    <value>That file doesn't look like a valid cookies file.</value>
+  </data>
+  <data name="cookieErrorPaste" xml:space="preserve">
+    <value>The clipboard doesn't contain valid cookies.</value>
+  </data>
+  <data name="cookieErrorNothingToView" xml:space="preserve">
+    <value>There are no cookies to view.</value>
+  </data>
+  <data name="cookieErrorViewer" xml:space="preserve">
+    <value>The cookie viewer could not be opened.</value>
+  </data>
 </root>

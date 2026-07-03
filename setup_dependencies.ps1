@@ -63,25 +63,22 @@ if ((Is-Placeholder $ffmpegPath) -or (Is-Placeholder $ffprobePath)) {
 }
 
 # --- yt-dlp ---
+# Always download the latest yt-dlp so extractors stay up to date with site changes.
 $ytdlpPath = Join-Path $binariesDir "yt-dlp.exe"
-# Always check for update or download if missing
-# Note: Since the user might want to keep a stable version, we only download if missing. 
-# --- yt-dlp ---
-$ytdlpPath = Join-Path $binariesDir "yt-dlp.exe"
+$ytdlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
 
-if (Is-Placeholder $ytdlpPath) {
-    Write-Host "yt-dlp not found (or is a placeholder). Downloading..." -ForegroundColor Cyan
-    $ytdlpUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
-    
-    try {
-        Invoke-WebRequest -Uri $ytdlpUrl -OutFile $ytdlpPath
-        Write-Host "yt-dlp installed successfully." -ForegroundColor Green
+Write-Host "Downloading latest yt-dlp..." -ForegroundColor Cyan
+try {
+    Invoke-WebRequest -Uri $ytdlpUrl -OutFile $ytdlpPath
+    Write-Host "yt-dlp updated to the latest version successfully." -ForegroundColor Green
+}
+catch {
+    Write-Error "Failed to download yt-dlp: $_"
+    if (-not (Test-Path $ytdlpPath)) {
+        Write-Error "yt-dlp.exe is missing and could not be downloaded. The app will not be able to download videos."
+    } else {
+        Write-Host "Keeping the existing yt-dlp.exe." -ForegroundColor Yellow
     }
-    catch {
-        Write-Error "Failed to download yt-dlp: $_"
-    }
-} else {
-    Write-Host "yt-dlp is already present." -ForegroundColor Green
 }
 
 # --- Deno (Optional JS engine for yt-dlp) ---

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2022 Jaden Phil Nebel (Onionware)
  *
  * This file is part of OnionMedia.
@@ -62,7 +62,7 @@ namespace OnionMedia.Core.Models
 
             customAccentColorHex = settingsService.GetSetting("customAccentColorHex") as string;
             useCustomAccentColor = settingsService.GetSetting("useCustomAccentColor") as bool? ?? false;
-            showDonationBanner = settingsService.GetSetting("showDonationBanner") as bool? ?? true;
+            showDonationBanner = settingsService.GetSetting("showDonationBanner") as bool? ?? false;
             selectedTheme = ParseEnum<ThemeType>(settingsService.GetSetting("selectedTheme"));
             appFlowDirection = ParseEnum<AppFlowDirection>(settingsService.GetSetting("appFlowDirection"));
             
@@ -83,6 +83,12 @@ namespace OnionMedia.Core.Models
                 this.startPageType = StartPageType.LastOpened;
             else
                 this.startPageType = ParseEnum<StartPageType>(startPageType);
+
+            cookieSource = ParseEnum<CookieSource>(settingsService.GetSetting("cookieSource"));
+            cookieBrowser = ParseEnum<CookieBrowser>(settingsService.GetSetting("cookieBrowser"));
+            cookieCustomBrowserKey = settingsService.GetSetting("cookieCustomBrowserKey") as string ?? string.Empty;
+            cookieFilePath = settingsService.GetSetting("cookieFilePath") as string ?? string.Empty;
+            pastedCookies = settingsService.GetSetting("pastedCookies") as string ?? string.Empty;
         }
 
         private readonly ISettingsService settingsService = IoC.Default.GetService<ISettingsService>();
@@ -337,6 +343,50 @@ namespace OnionMedia.Core.Models
             }
         }
         private VideoAddMode videoAddMode;
+
+        //Cookie settings
+        public CookieSource CookieSource
+        {
+            get => cookieSource;
+            set
+            {
+                if (SetProperty(ref cookieSource, value))
+                    settingsService.SetSetting("cookieSource", value.ToString());
+            }
+        }
+        private CookieSource cookieSource;
+
+        public CookieBrowser CookieBrowser
+        {
+            get => cookieBrowser;
+            set
+            {
+                if (SetProperty(ref cookieBrowser, value))
+                    settingsService.SetSetting("cookieBrowser", value.ToString());
+            }
+        }
+        private CookieBrowser cookieBrowser;
+
+        public string CookieCustomBrowserKey
+        {
+            get => cookieCustomBrowserKey;
+            set => SetSetting(ref cookieCustomBrowserKey, value, "cookieCustomBrowserKey");
+        }
+        private string cookieCustomBrowserKey;
+
+        public string CookieFilePath
+        {
+            get => cookieFilePath;
+            set => SetSetting(ref cookieFilePath, value, "cookieFilePath");
+        }
+        private string cookieFilePath;
+
+        public string PastedCookies
+        {
+            get => pastedCookies;
+            set => SetSetting(ref pastedCookies, value, "pastedCookies");
+        }
+        private string pastedCookies;
 
 
         private void SetSetting<T>(ref T field, T value, string settingName, bool forceOnPropertyChanged = false, [CallerMemberName] string propName = null)

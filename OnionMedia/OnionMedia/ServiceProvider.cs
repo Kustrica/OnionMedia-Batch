@@ -1,4 +1,4 @@
-﻿using Jab;
+using Jab;
 using Microsoft.UI.Xaml;
 using OnionMedia.Activation;
 using OnionMedia.Contracts.Services;
@@ -24,6 +24,7 @@ namespace OnionMedia;
 [Singleton(typeof(IDataCollectionProvider<LibraryInfo>), typeof(LibraryInfoProvider))]
 [Singleton(typeof(IDialogService), typeof(DialogService))]
 [Singleton(typeof(IDownloaderDialogService), typeof(DownloaderDialogService))]
+[Singleton(typeof(ICookieViewerDialog), typeof(CookieViewerDialogService))]
 [Singleton(typeof(IThirdPartyLicenseDialog), typeof(ThirdPartyLicenseDialog))]
 [Singleton(typeof(IConversionPresetDialog), typeof(ConversionPresetDialog))]
 [Singleton(typeof(IFiletagEditorDialog), typeof(FiletagEditorDialog))]

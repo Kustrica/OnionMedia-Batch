@@ -66,6 +66,7 @@ namespace OnionMedia.Core.Classes
 				throw new ArgumentNullException(nameof(stream));
 
 			OptionSet ytOptions = new() { RestrictFilenames = true };
+			IDisposable cookieCleanup = CookieOptionsBuilder.Apply(ytOptions);
 
 			//Creates a temp directory if it does not already exist.
 			Directory.CreateDirectory(pathProvider.DownloaderTempdir);
@@ -121,6 +122,7 @@ namespace OnionMedia.Core.Classes
 			}
 			catch (Exception ex)
 			{
+				cookieCleanup.Dispose();
 				stream.Downloading = false;
 				stream.Converting = false;
 				Console.WriteLine(ex.Message);
@@ -225,7 +227,11 @@ namespace OnionMedia.Core.Classes
 						throw;
 				}
 			}
-			finally { stream.Moving = false; }
+			finally 
+			{ 
+				stream.Moving = false; 
+				cookieCleanup.Dispose(); 
+			}
 		}
 
 		public static async Task DownloadThumbnailAsync(string videoUrl, string filePath, string imageFormat, CancellationToken ct = default)
@@ -233,6 +239,7 @@ namespace OnionMedia.Core.Classes
 			OptionSet options = new() { WriteThumbnail = true, SkipDownload = true, Output = filePath };
 			options.AddCustomOption("--convert-thumbnails", imageFormat);
 			options.AddCustomOption("--ppa", "ThumbnailsConvertor:-q:v 1");
+			using var cookieCleanup = CookieOptionsBuilder.Apply(options);
 			string newFilename = $"{filePath}.{imageFormat}";
 			await downloadClient.RunWithOptions(new[] { videoUrl }, options, ct);
 			if (File.Exists(newFilename))

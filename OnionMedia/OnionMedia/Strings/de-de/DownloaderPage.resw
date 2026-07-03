@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -212,5 +212,83 @@
   </data>
   <data name="viewLog.Text" xml:space="preserve">
     <value>Log anzeigen</value>
+  </data>
+  <data name="cookieMenuNone.Text" xml:space="preserve">
+    <value>Keine Cookies verwenden</value>
+  </data>
+  <data name="cookieMenuBrowser.Text" xml:space="preserve">
+    <value>Browser-Cookies</value>
+  </data>
+  <data name="cookieMenuCustomKey.Text" xml:space="preserve">
+    <value>Benutzerdefinierter Schlüssel (aus Zwischenablage)…</value>
+  </data>
+  <data name="cookieMenuFile.Text" xml:space="preserve">
+    <value>Cookies aus Datei laden…</value>
+  </data>
+  <data name="cookieMenuPaste.Text" xml:space="preserve">
+    <value>Cookies einfügen (aus Zwischenablage)</value>
+  </data>
+  <data name="cookieMenuView.Text" xml:space="preserve">
+    <value>Cookies anzeigen</value>
+  </data>
+  <data name="cookieViewerTitle" xml:space="preserve">
+    <value>Cookies</value>
+  </data>
+  <data name="cookieBtnDisabled" xml:space="preserve">
+    <value>Cookies</value>
+  </data>
+  <data name="cookieBtnFromBrowser" xml:space="preserve">
+    <value>Cookies aus Browser</value>
+  </data>
+  <data name="cookieBtnFromCustomKey" xml:space="preserve">
+    <value>Cookies aus eigenem Schlüssel</value>
+  </data>
+  <data name="cookieBtnFile" xml:space="preserve">
+    <value>Cookies aus Datei</value>
+  </data>
+  <data name="cookieBtnPasted" xml:space="preserve">
+    <value>Eingefügte Cookies</value>
+  </data>
+  <data name="cookieStatusDisabled" xml:space="preserve">
+    <value>Cookies werden nicht verwendet</value>
+  </data>
+  <data name="cookieStatusUsingBrowser" xml:space="preserve">
+    <value>Cookies aus {0} werden verwendet</value>
+  </data>
+  <data name="cookieStatusBrowserGeneric" xml:space="preserve">
+    <value>Cookies aus deinem Browser werden verwendet</value>
+  </data>
+  <data name="cookieStatusFile" xml:space="preserve">
+    <value>Cookies aus einer Datei werden verwendet</value>
+  </data>
+  <data name="cookieStatusPasted" xml:space="preserve">
+    <value>Eingefügte Cookies werden verwendet</value>
+  </data>
+  <data name="cookieDetailsBrowser" xml:space="preserve">
+    <value>Browser: {0}</value>
+  </data>
+  <data name="cookieDetailsFile" xml:space="preserve">
+    <value>Datei: {0}</value>
+  </data>
+  <data name="cookieDetailsDomains" xml:space="preserve">
+    <value>Domains: {0}</value>
+  </data>
+  <data name="cookieErrorInvalid" xml:space="preserve">
+    <value>Die Cookies scheinen ungültig oder abgelaufen zu sein. Die Cookie-Verwendung wurde deaktiviert.</value>
+  </data>
+  <data name="cookieErrorCustomKey" xml:space="preserve">
+    <value>Das sieht nicht nach einem gültigen Browser-Schlüssel aus.</value>
+  </data>
+  <data name="cookieErrorFile" xml:space="preserve">
+    <value>Diese Datei sieht nicht nach einer gültigen Cookie-Datei aus.</value>
+  </data>
+  <data name="cookieErrorPaste" xml:space="preserve">
+    <value>Die Zwischenablage enthält keine gültigen Cookies.</value>
+  </data>
+  <data name="cookieErrorNothingToView" xml:space="preserve">
+    <value>Es gibt keine Cookies zum Anzeigen.</value>
+  </data>
+  <data name="cookieErrorViewer" xml:space="preserve">
+    <value>Der Cookie-Viewer konnte nicht geöffnet werden.</value>
   </data>
 </root>

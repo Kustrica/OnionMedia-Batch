@@ -1,4 +1,5 @@
-<Project Sdk="Microsoft.NET.Sdk">
+
+	<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
@@ -68,6 +69,7 @@
 		<None Remove="Views\Dialogs\LicenseDialogPages\LicensesListPage.xaml" />
 		<None Remove="Views\Dialogs\LicensesDialog.xaml" />
 		<None Remove="Views\Dialogs\PlaylistSelectorDialog.xaml" />
+		<None Remove="Views\Dialogs\CookieViewerDialog.xaml" />
 		<None Remove="Core\**" />
 		<None Remove="ViewModels\Dialogs\**" />
 	</ItemGroup>
@@ -156,6 +158,9 @@
 			<SubType>Designer</SubType>
 		</Page>
 		<Page Update="Views\Dialogs\ConversionPresetDialog.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Views\Dialogs\CookieViewerDialog.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</Page>
 	</ItemGroup>

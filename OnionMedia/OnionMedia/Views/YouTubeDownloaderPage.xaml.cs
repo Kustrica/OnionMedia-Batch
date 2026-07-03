@@ -73,6 +73,10 @@ namespace OnionMedia.Views
 		//Workaround for a bug from WinUI 3 (freezing ProgressRing)
 		private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            // Ensure dialogs (e.g. the cookie viewer) opened from this page have a valid XamlRoot,
+            // even when the downloader page is the first page the user visits.
+            UIResources.XamlRoot = this.XamlRoot;
+
             btnProgressRing.IsActive = false;
             btnProgressRing.IsActive = true;
             rotateInSearchIconTrigger.Value = false;

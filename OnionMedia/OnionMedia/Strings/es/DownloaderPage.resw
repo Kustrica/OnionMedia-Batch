@@ -213,4 +213,82 @@
   <data name="viewLog.Text" xml:space="preserve">
     <value>Mostrar registro</value>
   </data>
+  <data name="cookieMenuNone.Text" xml:space="preserve">
+    <value>No usar cookies</value>
+  </data>
+  <data name="cookieMenuBrowser.Text" xml:space="preserve">
+    <value>Cookies del navegador</value>
+  </data>
+  <data name="cookieMenuCustomKey.Text" xml:space="preserve">
+    <value>Clave personalizada (desde portapapeles)…</value>
+  </data>
+  <data name="cookieMenuFile.Text" xml:space="preserve">
+    <value>Cargar cookies desde archivo…</value>
+  </data>
+  <data name="cookieMenuPaste.Text" xml:space="preserve">
+    <value>Pegar cookies (desde portapapeles)</value>
+  </data>
+  <data name="cookieMenuView.Text" xml:space="preserve">
+    <value>Ver cookies</value>
+  </data>
+  <data name="cookieViewerTitle" xml:space="preserve">
+    <value>Cookies</value>
+  </data>
+  <data name="cookieBtnDisabled" xml:space="preserve">
+    <value>Cookies</value>
+  </data>
+  <data name="cookieBtnFromBrowser" xml:space="preserve">
+    <value>Cookies del navegador</value>
+  </data>
+  <data name="cookieBtnFromCustomKey" xml:space="preserve">
+    <value>Cookies de clave personalizada</value>
+  </data>
+  <data name="cookieBtnFile" xml:space="preserve">
+    <value>Cookies desde archivo</value>
+  </data>
+  <data name="cookieBtnPasted" xml:space="preserve">
+    <value>Cookies pegadas</value>
+  </data>
+  <data name="cookieStatusDisabled" xml:space="preserve">
+    <value>No se usan cookies</value>
+  </data>
+  <data name="cookieStatusUsingBrowser" xml:space="preserve">
+    <value>Usando cookies de {0}</value>
+  </data>
+  <data name="cookieStatusBrowserGeneric" xml:space="preserve">
+    <value>Usando cookies de tu navegador</value>
+  </data>
+  <data name="cookieStatusFile" xml:space="preserve">
+    <value>Usando cookies desde un archivo</value>
+  </data>
+  <data name="cookieStatusPasted" xml:space="preserve">
+    <value>Usando cookies pegadas</value>
+  </data>
+  <data name="cookieDetailsBrowser" xml:space="preserve">
+    <value>Navegador: {0}</value>
+  </data>
+  <data name="cookieDetailsFile" xml:space="preserve">
+    <value>Archivo: {0}</value>
+  </data>
+  <data name="cookieDetailsDomains" xml:space="preserve">
+    <value>Dominios: {0}</value>
+  </data>
+  <data name="cookieErrorInvalid" xml:space="preserve">
+    <value>Las cookies parecen no ser válidas o haber expirado. Se ha desactivado el uso de cookies.</value>
+  </data>
+  <data name="cookieErrorCustomKey" xml:space="preserve">
+    <value>Eso no parece una clave de navegador válida.</value>
+  </data>
+  <data name="cookieErrorFile" xml:space="preserve">
+    <value>Ese archivo no parece un archivo de cookies válido.</value>
+  </data>
+  <data name="cookieErrorPaste" xml:space="preserve">
+    <value>El portapapeles no contiene cookies válidas.</value>
+  </data>
+  <data name="cookieErrorNothingToView" xml:space="preserve">
+    <value>No hay cookies para mostrar.</value>
+  </data>
+  <data name="cookieErrorViewer" xml:space="preserve">
+    <value>No se pudo abrir el visor de cookies.</value>
+  </data>
 </root>

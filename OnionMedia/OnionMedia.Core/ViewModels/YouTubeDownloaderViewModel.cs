@@ -43,7 +43,7 @@ namespace OnionMedia.Core.ViewModels
     [ObservableObject]
     public sealed partial class YouTubeDownloaderViewModel
     {
-        public YouTubeDownloaderViewModel(IDialogService dialogService, IDownloaderDialogService downloaderDialogService, IDispatcherService dispatcher, INetworkStatusService networkStatusService, IToastNotificationService toastNotificationService, IPathProvider pathProvider, ITaskbarProgressService taskbarProgressService, IWindowClosingService windowClosingService, IFiletagEditorDialog filetagDialogService)
+        public YouTubeDownloaderViewModel(IDialogService dialogService, IDownloaderDialogService downloaderDialogService, IDispatcherService dispatcher, INetworkStatusService networkStatusService, IToastNotificationService toastNotificationService, IPathProvider pathProvider, ITaskbarProgressService taskbarProgressService, IWindowClosingService windowClosingService, IFiletagEditorDialog filetagDialogService, ICookieViewerDialog cookieViewerDialog)
         {
             this.dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
             this.downloaderDialogService = downloaderDialogService ?? throw new ArgumentNullException(nameof(downloaderDialogService));
@@ -51,6 +51,7 @@ namespace OnionMedia.Core.ViewModels
             this.toastNotificationService = toastNotificationService ?? throw new ArgumentNullException(nameof(toastNotificationService));
             this.pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
             this.filetagDialogService = filetagDialogService ?? throw new ArgumentNullException(nameof(filetagDialogService));
+            this.cookieViewerDialog = cookieViewerDialog ?? throw new ArgumentNullException(nameof(cookieViewerDialog));
             this.networkStatusService = networkStatusService;
             this.taskbarProgressService = taskbarProgressService;
 
@@ -80,6 +81,7 @@ namespace OnionMedia.Core.ViewModels
         private readonly IDialogService dialogService;
         private readonly IDownloaderDialogService downloaderDialogService;
         private readonly IFiletagEditorDialog filetagDialogService;
+        private readonly ICookieViewerDialog cookieViewerDialog;
         private readonly IDispatcherService dispatcher;
         private readonly INetworkStatusService networkStatusService;
         private readonly IToastNotificationService toastNotificationService;
@@ -240,12 +242,10 @@ namespace OnionMedia.Core.ViewModels
         //Search a video or get a video from a url and add it to the queue.
         private async Task FillInfosAsync(string videolink, bool allowPlaylists = true)
         {
-            if (VideoNotFound)
-            {
-                VideoNotFound = false;
-                VideoNotFound = true;
-                return;
-            }
+            // Always clear a previous "not found" state so that pressing the plus button again
+            // retries the fetch (e.g. after the user added cookies for a gated video),
+            // even when the URL text hasn't changed.
+            VideoNotFound = false;
 
             string urlClone = (string)(videolink?.Clone() ?? string.Empty);
 
@@ -297,7 +297,10 @@ namespace OnionMedia.Core.ViewModels
                 }
 
                 ScanVideoCount++;
-                var data = await DownloaderMethods.downloadClient.RunVideoDataFetch(videolink);
+                var (cookieOpts, cookieCleanup) = BuildCookieFetchOptions();
+                RunResult<VideoData> data;
+                try { data = await DownloaderMethods.downloadClient.RunVideoDataFetch(videolink, overrideOptions: cookieOpts); }
+                finally { cookieCleanup.Dispose(); }
 
                 // Handling for GIF/Direct downloads when yt-dlp fails to extract "video" metadata
 				if (!data.Success && SelectedDownloadMode == DownloadMode.Gif)
@@ -597,7 +600,9 @@ namespace OnionMedia.Core.ViewModels
                             for (int i = 0; i < 3; i++)
                             {
                                 if (token.IsCancellationRequested) break;
-                                data = await DownloaderMethods.downloadClient.RunVideoDataFetch(url);
+                                var (cookieOptsB, cookieCleanupB) = BuildCookieFetchOptions();
+                            try { data = await DownloaderMethods.downloadClient.RunVideoDataFetch(url, overrideOptions: cookieOptsB); }
+                            finally { cookieCleanupB.Dispose(); }
                                 if (data.Success) break;
                                 try { await Task.Delay(500 * (i + 1), token); } catch (OperationCanceledException) { break; }
                             }
@@ -798,7 +803,10 @@ namespace OnionMedia.Core.ViewModels
                 {
                     try
                     {
-                        var video = await DownloaderMethods.downloadClient.RunVideoDataFetch(url, ct: cToken);
+                        var (cookieOptsC, cookieCleanupC) = BuildCookieFetchOptions();
+                        RunResult<VideoData> video;
+                        try { video = await DownloaderMethods.downloadClient.RunVideoDataFetch(url, ct: cToken, overrideOptions: cookieOptsC); }
+                        finally { cookieCleanupC.Dispose(); }
 
                         // Video fetch logging for playlists
                         if (!video.Success)
@@ -884,6 +892,17 @@ namespace OnionMedia.Core.ViewModels
             }
             catch (InvalidOperationException) { Debug.WriteLine("InvalidOperation triggered"); }
             await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Builds an OptionSet carrying the current cookie configuration for metadata fetches.
+        /// Returns (options, cleanup). Always dispose the cleanup token after the fetch.
+        /// </summary>
+        private static (YoutubeDLSharp.Options.OptionSet options, System.IDisposable cleanup) BuildCookieFetchOptions()
+        {
+            var options = new YoutubeDLSharp.Options.OptionSet();
+            var cleanup = OnionMedia.Core.Classes.CookieOptionsBuilder.Apply(options);
+            return (options, cleanup);
         }
 
         private bool canceledAll = false;
@@ -986,6 +1005,12 @@ namespace OnionMedia.Core.ViewModels
                 // Post-download summary for failed videos
                 if (failedVideos.Any() && !canceledAll)
                 {
+                    // If cookies were active and the failures are not disk-related, the cookies are
+                    // most likely invalid/expired. Notify the user and reset to "no cookies".
+                    bool diskRelated = unauthorizedAccessExceptions + directoryNotFoundExceptions + notEnoughSpaceExceptions > 0;
+                    if (CookiesEnabled && !diskRelated)
+                        HandleCookieError();
+
                     string failedMsg = $"{failedVideos.Count} video(s) failed to download.";
                     bool showDialog = true;
                     while (showDialog)
@@ -1114,6 +1139,298 @@ namespace OnionMedia.Core.ViewModels
             OnPropertyChanged(nameof(QueueIsEmpty));
             OnPropertyChanged(nameof(QueueIsNotEmpty));
             OnPropertyChanged(nameof(ResolutionsAvailable));
+        }
+
+        // ===== Cookie support =====
+
+        public static CookieBrowser[] CookieBrowsers { get; } = Enum.GetValues<CookieBrowser>().ToArray();
+
+        /// <summary>True when any cookie source is active (used to highlight the button icon).</summary>
+        public bool CookiesEnabled => AppSettings.Instance.CookieSource != CookieSource.None;
+
+        /// <summary>True only for File/Pasted sources where the raw cookie content can be shown.</summary>
+        public bool CanViewCookies
+        {
+            get
+            {
+                var s = AppSettings.Instance;
+                return (s.CookieSource == CookieSource.File && !string.IsNullOrWhiteSpace(s.CookieFilePath))
+                    || (s.CookieSource == CookieSource.Pasted && !string.IsNullOrWhiteSpace(s.PastedCookies));
+            }
+        }
+
+        /// <summary>
+        /// Human-friendly, Title-cased browser name for the current selection,
+        /// e.g. "Firefox", "Chrome", or the raw custom key.
+        /// </summary>
+        private static string GetBrowserDisplayName()
+        {
+            var s = AppSettings.Instance;
+            if (s.CookieBrowser == CookieBrowser.Custom)
+                return string.IsNullOrWhiteSpace(s.CookieCustomBrowserKey) ? string.Empty : s.CookieCustomBrowserKey.Trim();
+
+            string key = s.CookieBrowser.ToString();
+            if (string.IsNullOrEmpty(key)) return string.Empty;
+            return char.ToUpperInvariant(key[0]) + key.Substring(1).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Short label shown ON the cookie button, e.g. "Cookies",
+        /// "Cookies from Firefox", "Cookies from custom key", "Cookies file", "Pasted cookies".
+        /// </summary>
+        public string CurrentCookieButtonText
+        {
+            get
+            {
+                var s = AppSettings.Instance;
+                switch (s.CookieSource)
+                {
+                    case CookieSource.Browser:
+                        return s.CookieBrowser == CookieBrowser.Custom
+                            ? "cookieBtnFromCustomKey".GetLocalized("DownloaderPage")
+                            : "cookieBtnFromBrowser".GetLocalized("DownloaderPage");
+                    case CookieSource.File:
+                        return "cookieBtnFile".GetLocalized("DownloaderPage");
+                    case CookieSource.Pasted:
+                        return "cookieBtnPasted".GetLocalized("DownloaderPage");
+                    default:
+                        return "cookieBtnDisabled".GetLocalized("DownloaderPage");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Full status line, e.g. "Cookies disabled" or "Using cookies from Firefox".
+        /// </summary>
+        public string CurrentCookieStatusText
+        {
+            get
+            {
+                var s = AppSettings.Instance;
+                switch (s.CookieSource)
+                {
+                    case CookieSource.Browser:
+                        string name = GetBrowserDisplayName();
+                        return string.IsNullOrWhiteSpace(name)
+                            ? "cookieStatusBrowserGeneric".GetLocalized("DownloaderPage")
+                            : string.Format("cookieStatusUsingBrowser".GetLocalized("DownloaderPage"), name);
+                    case CookieSource.File:
+                        return "cookieStatusFile".GetLocalized("DownloaderPage");
+                    case CookieSource.Pasted:
+                        return "cookieStatusPasted".GetLocalized("DownloaderPage");
+                    default:
+                        return "cookieStatusDisabled".GetLocalized("DownloaderPage");
+                }
+            }
+        }
+
+        /// <summary>Multi-line details (source / browser / file / domains) for the flyout header.</summary>
+        public string CurrentCookieDetails
+        {
+            get
+            {
+                var s = AppSettings.Instance;
+                var sb = new StringBuilder();
+                switch (s.CookieSource)
+                {
+                    case CookieSource.Browser:
+                        sb.AppendLine(string.Format("cookieDetailsBrowser".GetLocalized("DownloaderPage"), GetBrowserDisplayName()));
+                        break;
+                    case CookieSource.File:
+                        sb.AppendLine(string.Format("cookieDetailsFile".GetLocalized("DownloaderPage"), s.CookieFilePath));
+                        AppendDomains(sb, SafeReadFile(s.CookieFilePath));
+                        break;
+                    case CookieSource.Pasted:
+                        sb.AppendLine("cookieStatusPasted".GetLocalized("DownloaderPage"));
+                        AppendDomains(sb, s.PastedCookies);
+                        break;
+                    default:
+                        sb.Append("cookieStatusDisabled".GetLocalized("DownloaderPage"));
+                        break;
+                }
+                return sb.ToString().TrimEnd();
+            }
+        }
+
+        private static void AppendDomains(StringBuilder sb, string netscapeContent)
+        {
+            var domains = CookieOptionsBuilder.ParseDomains(netscapeContent);
+            if (domains.Count > 0)
+                sb.AppendLine(string.Format("cookieDetailsDomains".GetLocalized("DownloaderPage"), string.Join(", ", domains)));
+        }
+
+        private static string SafeReadFile(string path)
+        {
+            try { return !string.IsNullOrWhiteSpace(path) && File.Exists(path) ? File.ReadAllText(path) : string.Empty; }
+            catch { return string.Empty; }
+        }
+
+        // ----- Inline notification (InfoBar) for cookie feedback -----
+
+        private bool cookieInfoBarOpen;
+        public bool CookieInfoBarOpen
+        {
+            get => cookieInfoBarOpen;
+            set => SetProperty(ref cookieInfoBarOpen, value);
+        }
+
+        private string cookieInfoBarMessage;
+        public string CookieInfoBarMessage
+        {
+            get => cookieInfoBarMessage;
+            set => SetProperty(ref cookieInfoBarMessage, value);
+        }
+
+        private CookieNoticeSeverity cookieInfoBarSeverity = CookieNoticeSeverity.Informational;
+        public CookieNoticeSeverity CookieInfoBarSeverity
+        {
+            get => cookieInfoBarSeverity;
+            set => SetProperty(ref cookieInfoBarSeverity, value);
+        }
+
+        private CancellationTokenSource cookieInfoBarDismissCts;
+
+        private void ShowCookieInfo(string message, CookieNoticeSeverity severity)
+        {
+            CookieInfoBarMessage = message;
+            CookieInfoBarSeverity = severity;
+            CookieInfoBarOpen = true;
+
+            // Cancel any pending auto-dismiss so a newer notice keeps its full duration.
+            cookieInfoBarDismissCts?.Cancel();
+            cookieInfoBarDismissCts = new CancellationTokenSource();
+            var token = cookieInfoBarDismissCts.Token;
+
+            // Errors stay until dismissed; transient notices fade out on their own.
+            if (severity == CookieNoticeSeverity.Error)
+                return;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(4000, token);
+                    if (!token.IsCancellationRequested)
+                        dispatcher.Enqueue(() => CookieInfoBarOpen = false);
+                }
+                catch (TaskCanceledException) { }
+            });
+        }
+
+        /// <summary>
+        /// Called by the download flow when yt-dlp fails in a way that indicates broken cookies.
+        /// Resets the cookie source to None and notifies the user without blocking the UI.
+        /// </summary>
+        public void HandleCookieError()
+        {
+            AppSettings.Instance.CookieSource = CookieSource.None;
+            RaiseCookieStatusChanged();
+            ShowCookieInfo("cookieErrorInvalid".GetLocalized("DownloaderPage"), CookieNoticeSeverity.Error);
+        }
+
+        private void RaiseCookieStatusChanged()
+        {
+            OnPropertyChanged(nameof(CookiesEnabled));
+            OnPropertyChanged(nameof(CanViewCookies));
+            OnPropertyChanged(nameof(CurrentCookieButtonText));
+            OnPropertyChanged(nameof(CurrentCookieStatusText));
+            OnPropertyChanged(nameof(CurrentCookieDetails));
+        }
+
+        [ICommand]
+        private void DisableCookies()
+        {
+            AppSettings.Instance.CookieSource = CookieSource.None;
+            RaiseCookieStatusChanged();
+        }
+
+        [ICommand]
+        private void UseBrowserCookies(string browserName)
+        {
+            if (!Enum.TryParse<CookieBrowser>(browserName, out var browser) || browser == CookieBrowser.Custom)
+                return;
+
+            AppSettings.Instance.CookieBrowser = browser;
+            AppSettings.Instance.CookieSource = CookieSource.Browser;
+            RaiseCookieStatusChanged();
+            ShowCookieInfo(CurrentCookieStatusText, CookieNoticeSeverity.Success);
+        }
+
+        [ICommand]
+        private async Task UseCustomBrowserKey()
+        {
+            var key = await ClipboardService.GetTextAsync();
+            key = key?.Trim();
+            // A browser key is a single short token (e.g. "firefox"), never a URL or multi-line text.
+            if (string.IsNullOrWhiteSpace(key) || key.Contains(' ') || key.Contains('\n') || key.Length > 40)
+            {
+                ShowCookieInfo("cookieErrorCustomKey".GetLocalized("DownloaderPage"), CookieNoticeSeverity.Error);
+                return;
+            }
+            AppSettings.Instance.CookieCustomBrowserKey = key;
+            AppSettings.Instance.CookieBrowser = CookieBrowser.Custom;
+            AppSettings.Instance.CookieSource = CookieSource.Browser;
+            RaiseCookieStatusChanged();
+            ShowCookieInfo(CurrentCookieStatusText, CookieNoticeSeverity.Success);
+        }
+
+        [ICommand]
+        private async Task UseCookieFile()
+        {
+            var path = await dialogService.ShowSingleFilePickerDialogAsync(DirectoryLocation.Documents);
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
+
+            if (!CookieOptionsBuilder.LooksLikeCookieFile(SafeReadFile(path)))
+            {
+                ShowCookieInfo("cookieErrorFile".GetLocalized("DownloaderPage"), CookieNoticeSeverity.Error);
+                return;
+            }
+            AppSettings.Instance.CookieFilePath = path;
+            AppSettings.Instance.CookieSource = CookieSource.File;
+            RaiseCookieStatusChanged();
+            ShowCookieInfo("cookieStatusFile".GetLocalized("DownloaderPage"), CookieNoticeSeverity.Success);
+        }
+
+        [ICommand]
+        private async Task PasteCookies()
+        {
+            var text = await ClipboardService.GetTextAsync();
+            if (string.IsNullOrWhiteSpace(text) || !CookieOptionsBuilder.LooksLikeCookieFile(text))
+            {
+                ShowCookieInfo("cookieErrorPaste".GetLocalized("DownloaderPage"), CookieNoticeSeverity.Error);
+                return;
+            }
+            AppSettings.Instance.PastedCookies = text;
+            AppSettings.Instance.CookieSource = CookieSource.Pasted;
+            RaiseCookieStatusChanged();
+            ShowCookieInfo("cookieStatusPasted".GetLocalized("DownloaderPage"), CookieNoticeSeverity.Success);
+        }
+
+        [ICommand]
+        private async Task OpenCookieViewer()
+        {
+            var s = AppSettings.Instance;
+            string content = s.CookieSource switch
+            {
+                CookieSource.File => SafeReadFile(s.CookieFilePath),
+                CookieSource.Pasted => s.PastedCookies,
+                _ => string.Empty
+            };
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                ShowCookieInfo("cookieErrorNothingToView".GetLocalized("DownloaderPage"), CookieNoticeSeverity.Warning);
+                return;
+            }
+            try
+            {
+                await cookieViewerDialog.ShowCookiesAsync(
+                    "cookieViewerTitle".GetLocalized("DownloaderPage"), content);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Cookie viewer failed: {ex}");
+                ShowCookieInfo("cookieErrorViewer".GetLocalized("DownloaderPage"), CookieNoticeSeverity.Error);
+            }
         }
 
         public int DownloadProgress

@@ -32,5 +32,7 @@
     <c:FFmpegConversionStateToVisibilityConverter x:Key="FFmpegConversionStateToVisibilityConverter"/>
     <c:FileSizeConverter x:Key="FileSizeConverter"/>
     <c:SampleRateComboBoxConverter x:Key="SampleRateComboBoxConverter"/>
+    <c:CookieAccentForegroundConverter x:Key="CookieAccentForegroundConverter"/>
+    <c:CookieNoticeSeverityToInfoBarSeverityConverter x:Key="CookieNoticeSeverityToInfoBarSeverityConverter"/>
     <h:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
 </ResourceDictionary>

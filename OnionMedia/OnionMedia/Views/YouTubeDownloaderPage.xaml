@@ -557,6 +557,87 @@
             </Grid>
         </ScrollViewer>
 
+        <!-- Cookie source button (bottom-left, mirrors "Open Video Folder" bottom-right) -->
+        <Button VerticalAlignment="Bottom"
+                HorizontalAlignment="Left"
+                Margin="20"
+                Height="40"
+                ToolTipService.ToolTip="Choose which cookies yt-dlp uses when downloading">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <!-- Hugeicons "Cookie" (stroke, rounded). Stroke follows the accent brush when cookies are active. -->
+                <Viewbox Width="18" Height="18" VerticalAlignment="Center">
+                    <Grid Width="24" Height="24">
+                        <Path StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Stroke="{x:Bind ViewModel.CookiesEnabled, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"
+                              Data="M12.0579 22C16.9725 22 21.0638 18.4937 21.9416 13.8586C22.1996 12.4967 21.5931 12.5686 20.3101 12.3438C19.3996 12.1844 18.5498 11.5667 18.2333 10.588C18.0178 9.9216 17.9376 9.89475 17.2352 9.86554C15.7861 9.80529 14.625 8.2689 15.2032 7.02602C15.419 6.56236 15.412 6.50892 15.0078 6.19448C14.3005 5.6443 13.9706 4.6166 14.0978 3.62604C14.2347 2.5591 14.3147 2.1747 13.1854 2.05455C7.45657 1.44501 2 6.0196 2 11.9948C2 17.5205 6.50308 22 12.0579 22Z"/>
+                        <Path StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Stroke="{x:Bind ViewModel.CookiesEnabled, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"
+                              Data="M12.0078 18L11.9988 18"/>
+                        <Path StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Stroke="{x:Bind ViewModel.CookiesEnabled, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"
+                              Data="M10 6L9 7"/>
+                        <Path StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Stroke="{x:Bind ViewModel.CookiesEnabled, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"
+                              Data="M17 14L16 15"/>
+                        <Path StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Stroke="{x:Bind ViewModel.CookiesEnabled, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"
+                              Data="M7 15L8 16"/>
+                        <Path StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Stroke="{x:Bind ViewModel.CookiesEnabled, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"
+                              Data="M11.125 12H11M11.25 12C11.25 12.1381 11.1381 12.25 11 12.25C10.8619 12.25 10.75 12.1381 10.75 12C10.75 11.8619 10.8619 11.75 11 11.75C11.1381 11.75 11.25 11.8619 11.25 12Z"/>
+                        <Path StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Stroke="{x:Bind ViewModel.CookiesEnabled, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"
+                              Data="M6.125 10H6M6.25 10C6.25 10.1381 6.13807 10.25 6 10.25C5.86193 10.25 5.75 10.1381 5.75 10C5.75 9.86193 5.86193 9.75 6 9.75C6.13807 9.75 6.25 9.86193 6.25 10Z"/>
+                    </Grid>
+                </Viewbox>
+                <TextBlock Text="{x:Bind ViewModel.CurrentCookieButtonText, Mode=OneWay}"
+                           VerticalAlignment="Center"
+                           Foreground="{x:Bind ViewModel.CookiesEnabled, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"/>
+            </StackPanel>
+            <Button.Flyout>
+                <MenuFlyout Placement="Top">
+                    <MenuFlyoutItem Text="Don't use cookies"
+                                    x:Uid="/DownloaderPage/cookieMenuNone"
+                                    Command="{x:Bind ViewModel.DisableCookiesCommand}">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="Cancel"/></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSubItem Text="Browser cookies" x:Uid="/DownloaderPage/cookieMenuBrowser">
+                        <MenuFlyoutSubItem.Icon><SymbolIcon Symbol="World"/></MenuFlyoutSubItem.Icon>
+                        <MenuFlyoutItem Text="Chrome" Command="{x:Bind ViewModel.UseBrowserCookiesCommand}" CommandParameter="Chrome"/>
+                        <MenuFlyoutItem Text="Brave" Command="{x:Bind ViewModel.UseBrowserCookiesCommand}" CommandParameter="Brave"/>
+                        <MenuFlyoutItem Text="Chromium" Command="{x:Bind ViewModel.UseBrowserCookiesCommand}" CommandParameter="Chromium"/>
+                        <MenuFlyoutItem Text="Edge" Command="{x:Bind ViewModel.UseBrowserCookiesCommand}" CommandParameter="Edge"/>
+                        <MenuFlyoutItem Text="Firefox" Command="{x:Bind ViewModel.UseBrowserCookiesCommand}" CommandParameter="Firefox"/>
+                        <MenuFlyoutItem Text="Opera" Command="{x:Bind ViewModel.UseBrowserCookiesCommand}" CommandParameter="Opera"/>
+                        <MenuFlyoutItem Text="Vivaldi" Command="{x:Bind ViewModel.UseBrowserCookiesCommand}" CommandParameter="Vivaldi"/>
+                        <MenuFlyoutItem Text="Whale" Command="{x:Bind ViewModel.UseBrowserCookiesCommand}" CommandParameter="Whale"/>
+                        <MenuFlyoutItem Text="Safari" Command="{x:Bind ViewModel.UseBrowserCookiesCommand}" CommandParameter="Safari"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Text="Custom key (from clipboard)…"
+                                        x:Uid="/DownloaderPage/cookieMenuCustomKey"
+                                        Command="{x:Bind ViewModel.UseCustomBrowserKeyCommand}"/>
+                    </MenuFlyoutSubItem>
+                    <MenuFlyoutItem Text="Load cookies from file…"
+                                    x:Uid="/DownloaderPage/cookieMenuFile"
+                                    Command="{x:Bind ViewModel.UseCookieFileCommand}">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="OpenFile"/></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="Paste cookies (from clipboard)"
+                                    x:Uid="/DownloaderPage/cookieMenuPaste"
+                                    Command="{x:Bind ViewModel.PasteCookiesCommand}">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="Paste"/></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator Visibility="{x:Bind ViewModel.CanViewCookies, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <MenuFlyoutItem Text="View cookies"
+                                    x:Uid="/DownloaderPage/cookieMenuView"
+                                    Command="{x:Bind ViewModel.OpenCookieViewerCommand}"
+                                    Visibility="{x:Bind ViewModel.CanViewCookies, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <MenuFlyoutItem.Icon><SymbolIcon Symbol="Document"/></MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                </MenuFlyout>
+            </Button.Flyout>
+        </Button>
+
         <Button VerticalAlignment="Bottom" 
                 HorizontalAlignment="Right" 
                 Margin="20"
@@ -576,5 +657,16 @@
             <TextBlock x:Uid="/DownloaderPage/donationBanner" Grid.Column="1" Margin="15,5" FontSize="16" TextWrapping="Wrap" VerticalAlignment="Center" MaxLines="4" TextTrimming="CharacterEllipsis"/>
             <Button Grid.Column="3" x:Uid="/DownloaderPage/donationBtn" Click="OpenDonationPage" Style="{StaticResource AccentButtonStyle}"/>
         </Grid>
+
+        <!-- Unobtrusive cookie feedback, centered near the bottom, auto-closes -->
+        <InfoBar VerticalAlignment="Bottom"
+                 HorizontalAlignment="Center"
+                 Margin="0,0,0,80"
+                 MaxWidth="520"
+                 Canvas.ZIndex="10"
+                 IsOpen="{x:Bind ViewModel.CookieInfoBarOpen, Mode=TwoWay}"
+                 Message="{x:Bind ViewModel.CookieInfoBarMessage, Mode=OneWay}"
+                 Severity="{x:Bind ViewModel.CookieInfoBarSeverity, Mode=OneWay, Converter={StaticResource CookieNoticeSeverityToInfoBarSeverityConverter}}"
+                 IsClosable="True"/>
     </Grid>
 </Page>
