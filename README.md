@@ -12,12 +12,21 @@
 - Added an import progress bar
 - Added GIF creation from video with selectable quality options
 - Added Path Folder button on every page
-- Removed Geo-Restrictions: Reverted YoutubeExplode to a clean version (6.0.7) to remove the political blocking message 
+- Removed Geo-Restrictions: Reverted YoutubeExplode to a clean version (6.0.7) to remove the political blocking message
+- Added full cookie support (browser, file, paste or custom key) for age-restricted and login-gated videos
 
 ## New Features
 | Download Counter | Import Progress |
 |:---:|:---:|
-| <img src="images/screenshots/Counter.jpg" width="100%"> | <img src="images/screenshots/Import.jpg" width="100%"> | 
+| <img src="images/screenshots/Counter.jpg" width="100%"> | <img src="images/screenshots/Import.jpg" width="100%"> |
+
+<div align="center">
+
+**Cookie Support**
+
+<img src="images/screenshots/cookie.png" width="50%">
+
+</div>
 
 ## Installation Guide:
 1. Download the latest release (`.zip`) and extract it.
