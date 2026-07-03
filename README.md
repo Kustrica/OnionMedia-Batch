@@ -19,14 +19,8 @@
 | Download Counter | Import Progress |
 |:---:|:---:|
 | <img src="images/screenshots/Counter.jpg" width="100%"> | <img src="images/screenshots/Import.jpg" width="100%"> |
-
-<div align="center">
-
-**Cookie Support**
-
-<img src="images/screenshots/cookie.png" width="50%">
-
-</div>
+| Cookie Support | Batch Download |
+| <img src="images/screenshots/cookie.png" width="100%"> | <img src="images/screenshots/bulk.png" width="100%"> |
 
 ## Installation Guide:
 1. Download the latest release (`.zip`) and extract it.
