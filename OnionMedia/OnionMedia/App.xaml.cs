@@ -123,6 +123,13 @@ namespace OnionMedia
 
                 //Enable Mica
                 TrySetSystemBackdrop();
+
+                // Keep yt-dlp current (site extractors / anti-bot changes) without blocking the UI.
+                _ = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try { await OnionMedia.Core.Classes.YtDlpUpdater.EnsureUpToDateAsync(); }
+                    catch (Exception ex) { Debug.WriteLine("yt-dlp auto update failed: " + ex.Message); }
+                });
             }
         }
 

@@ -17,6 +17,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:OnionMedia.Core.ViewModels"
     xmlns:m="using:OnionMedia.Core.Models"
+    xmlns:e="using:OnionMedia.Core.Enums"
     xmlns:i="using:Microsoft.Xaml.Interactivity" 
     xmlns:core="using:Microsoft.Xaml.Interactions.Core"
     xmlns:uc="using:OnionMedia.UserControls"
@@ -25,6 +26,7 @@
     xmlns:bhv="using:CommunityToolkit.WinUI.UI.Behaviors"
     xmlns:g="using:OnionMedia"
     xmlns:c="using:OnionMedia.Core"
+    xmlns:ctc="using:CommunityToolkit.WinUI.UI.Controls"
     mc:Ignorable="d"
     x:DefaultBindMode="OneWay">
 
@@ -82,7 +84,7 @@
                     <VisualState.Setters>
                         <Setter Target="progressBarPanel.(Grid.Row)" Value="1"/>
                         <Setter Target="progressBarPanel.(Grid.Column)" Value="0"/>
-                        <Setter Target="progressBarPanel.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="progressBarPanel.(Grid.ColumnSpan)" Value="3"/>
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="progressPanelSingleLineSmall">
@@ -102,7 +104,7 @@
                     <VisualState.Setters>
                         <Setter Target="progressBarPanel.(Grid.Row)" Value="1"/>
                         <Setter Target="progressBarPanel.(Grid.Column)" Value="0"/>
-                        <Setter Target="progressBarPanel.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="progressBarPanel.(Grid.ColumnSpan)" Value="3"/>
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -133,11 +135,13 @@
             </StackPanel>
 
         <ScrollViewer x:Name="scrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" VerticalAlignment="Top">
-            <Grid x:Name="ContentArea" Padding="24,0">
+            <!-- 20 px side padding = same page margin as the bottom Cookies / open-folder buttons (Margin="20"). -->
+            <Grid x:Name="ContentArea" Padding="20,0,20,62">
 
+                <!-- ~40 / 60: the playlist needs more room for its info than the controls on the left. -->
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
+                    <ColumnDefinition Width="4*" MinWidth="330"/>
+                    <ColumnDefinition Width="6*"/>
                 </Grid.ColumnDefinitions>
 
                 <Grid.RowDefinitions>
@@ -146,7 +150,7 @@
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
 
-                <StackPanel x:Name="editGrid" Margin="0,10" Padding="10" Spacing="10" Visibility="{x:Bind ViewModel.NetworkAvailable}">
+                <StackPanel x:Name="editGrid" Margin="0,2,0,10" Padding="0,4,16,10" Spacing="10" Visibility="{x:Bind ViewModel.NetworkAvailable}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
@@ -296,7 +300,7 @@
                                 Command="{x:Bind ViewModel.SetDownloadModeCommand}" CommandParameter="Gif"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Column="1" Visibility="{x:Bind ViewModel.ResolutionsAvailable, Mode=OneWay}" VerticalAlignment="Top" Margin="5,0,0,0">
+                        <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="5,0,0,0">
                             <StackPanel Visibility="{x:Bind ViewModel.ResolutionsAvailable, Mode=OneWay}">
                                 <TextBlock Text="Max Quality (All)" Margin="0,10,0,5" FontWeight="SemiBold" FontSize="16"/>
                                 <ComboBox Name="qualitySelection"
@@ -305,18 +309,47 @@
                                       SelectedItem="{x:Bind ViewModel.SelectedQuality, Mode=TwoWay}"
                                       IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty}" MinWidth="120" HorizontalAlignment="Left"/>
                             </StackPanel>
+
+                        <!-- Output compatibility (same setting as Settings → Video compatibility) -->
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,10,0,5">
+                                <TextBlock Text="Compatibility" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center"/>
+                                <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE946;" FontSize="14" VerticalAlignment="Center"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                    <ToolTipService.ToolTip>
+                                        <ToolTip MaxWidth="380">
+                                            <TextBlock TextWrapping="Wrap">
+                                                <Run FontWeight="SemiBold" Text="Original"/><Run Text=" (default) – the video is saved as the site delivers it (only packed into MP4). Fastest, no conversion. Some formats (AV1/VP9) may not play on iPhone or older TVs."/>
+                                                <LineBreak/><LineBreak/><Run FontWeight="SemiBold" Text="Universal"/><Run Text=" – the file is converted to H.264 + AAC (MP4) if it is in another format, so it plays everywhere (iPhone, TVs, browsers). The download takes longer when a conversion is needed."/>
+                                                <LineBreak/><LineBreak/><Run FontWeight="SemiBold" Text="Compact"/><Run Text=" – AV1/VP9 videos are converted to HEVC/H.265 + AAC (MP4): smaller files for iPhone, Mac and modern devices. H.264 videos are kept as they are. Converting takes longer."/>
+                                                <LineBreak/><LineBreak/><Run Text="The playlist shows the final format of each video; hover a card for source → result. Same setting as in Settings."/>
+                                            </TextBlock>
+                                        </ToolTip>
+                                    </ToolTipService.ToolTip>
+                                </FontIcon>
+                            </StackPanel>
+                            <ComboBox x:Name="compatibilitySelection" Margin="0,2" MinWidth="120" HorizontalAlignment="Left"
+                                      ItemsSource="{x:Bind m:AppSettings.VideoCompatibilityModes, Mode=OneTime}"
+                                      SelectedItem="{x:Bind m:AppSettings.Instance.VideoCompatibilityMode, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="e:VideoCompatibilityMode">
+                                        <ContentPresenter Content="{x:Bind Converter={StaticResource EnumDisplayNameConverter}, Mode=OneTime}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
                         </StackPanel>
                     </Grid>
 
                     <!-- TRIM VIDEO -->
-                    <TextBlock x:Uid="/DownloaderPage/shortVideo" Margin="0,5,0,0" HorizontalAlignment="Left" FontWeight="SemiBold" FontSize="16" Visibility="{x:Bind ViewModel.QueueIsEmpty, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}"/>
-                    <uc:TimeRangeSelector TimeSpanGroup="{x:Bind ViewModel.SelectedVideo.TimeSpanGroup}" IsReadOnly="{x:Bind ViewModel.SelectionIsInRange(ViewModel.Videos, videoQueue.SelectedIndex, x:True)}" IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty}" Visibility="{x:Bind ViewModel.QueueIsEmpty, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}"/>
+                    <TextBlock x:Uid="/DownloaderPage/shortVideo" Margin="0,5,0,0" HorizontalAlignment="Left" FontWeight="SemiBold" FontSize="16" Visibility="{x:Bind ViewModel.ShowTrimSection, Mode=OneWay}"/>
+                    <uc:TimeRangeSelector TimeSpanGroup="{x:Bind ViewModel.SelectedVideo.TimeSpanGroup}" IsReadOnly="{x:Bind ViewModel.SelectionIsInRange(ViewModel.Videos, videoQueue.SelectedIndex, x:True)}" IsEnabled="{x:Bind ViewModel.QueueIsNotEmpty}" Visibility="{x:Bind ViewModel.ShowTrimSection, Mode=OneWay}"/>
                 </StackPanel>
 
                 <Grid Grid.Column="1" x:Name="infoGrid" Visibility="{x:Bind ViewModel.NetworkAvailable}">
 
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="6"/>
                         <RowDefinition Height="auto"/>
                         <RowDefinition Height="auto"/>
                         <RowDefinition Height="auto"/>
@@ -371,12 +404,13 @@
                             <ListView Name="videoQueue" Grid.Column="1" Grid.Row="1"
                                   ItemsSource="{x:Bind ViewModel.Videos}" CornerRadius="10"
                                   Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-                                  SelectedItem="{x:Bind ViewModel.SelectedVideo, Mode=TwoWay}" MaxHeight="300">
+                                  SelectedItem="{x:Bind ViewModel.SelectedVideo, Mode=TwoWay}" MaxHeight="300"
+                                  SelectionMode="Extended" SelectionChanged="VideoQueue_SelectionChanged" KeyDown="VideoQueue_KeyDown">
 
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="m:StreamItemModel">
                                         <ListViewItem x:Name="itemRoot">
-                                            <Grid Padding="5" MinHeight="85">
+                                            <Grid Padding="4,6,0,6" MinHeight="64" Background="Transparent">
                                                 <Grid.ContextFlyout>
                                                     <MenuFlyout>
                                                         <MenuFlyoutItem x:Uid="/DownloaderPage/openURLInBrowser" Command="{x:Bind vm:YouTubeDownloaderViewModel.OpenUrlCommand}" CommandParameter="{x:Bind Video.Url}">
@@ -404,6 +438,12 @@
                                                                 <SymbolIcon Symbol="List"/>
                                                             </MenuFlyoutItem.Icon>
                                                         </MenuFlyoutItem>
+                                                        <MenuFlyoutSeparator/>
+                                                        <MenuFlyoutItem Text="Remove from playlist" KeyboardAcceleratorTextOverride="Del" Command="{x:Bind g:App.DownloaderViewModel.RemoveItemCommand}" CommandParameter="{x:Bind}">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <SymbolIcon Symbol="Delete"/>
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
                                                     </MenuFlyout>
                                                 </Grid.ContextFlyout>
 
@@ -411,48 +451,110 @@
                                                     <ColumnDefinition Width="80"/>
                                                     <ColumnDefinition Width="auto"/>
                                                     <ColumnDefinition/>
+                                                    <ColumnDefinition Width="auto"/>
                                                 </Grid.ColumnDefinitions>
 
+
                                                 <Grid.RowDefinitions>
-                                                    <RowDefinition/>
+                                                    <RowDefinition Height="auto"/>
                                                     <RowDefinition Height="auto"/>
                                                     <RowDefinition Height="auto"/>
                                                 </Grid.RowDefinitions>
 
+                                                <!-- Remove this item (X) -->
+                                                <Button Grid.Column="3" Grid.RowSpan="3" Width="28" Height="28" Padding="0" Margin="6,0,2,0"
+                                                        VerticalAlignment="Center" Background="Transparent" BorderThickness="0" CornerRadius="4"
+                                                        Command="{x:Bind g:App.DownloaderViewModel.RemoveItemCommand}" CommandParameter="{x:Bind}"
+                                                        ToolTipService.ToolTip="Remove from playlist" AutomationProperties.Name="Remove from playlist">
+                                                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE711;" FontSize="11"
+                                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                </Button>
 
-                                                <Frame x:Name="frame" MaxHeight="75" CornerRadius="3" VerticalAlignment="Center" Grid.RowSpan="2">
+                                                <Frame x:Name="frame" MaxHeight="60" CornerRadius="3" VerticalAlignment="Center" Grid.RowSpan="3">
                                                     <Image Source="{x:Bind Video.Thumbnail, Mode=OneTime}" Stretch="Uniform"/>
                                                 </Frame>
 
-                                                <TextBlock Text="{x:Bind Video.Title, Mode=OneTime}" TextTrimming="CharacterEllipsis" MaxLines="2" Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource MetaInfoTextStyle}"/>
+                                                <!-- Line 1: title -->
+                                                <TextBlock Text="{x:Bind Video.Title, Mode=OneTime}" TextTrimming="CharacterEllipsis" MaxLines="1" TextWrapping="NoWrap"
+                                                           Grid.Column="1" Grid.ColumnSpan="2" Margin="8,0,0,0" VerticalAlignment="Bottom"
+                                                           ToolTipService.ToolTip="{x:Bind Video.Title, Mode=OneTime}" Style="{StaticResource MetaInfoTextStyle}"/>
 
-                                                <ProgressRing Grid.Row="1" Grid.Column="1" Margin="5,0" IsIndeterminate="False" Value="{x:Bind ProgressInfo.Progress}" Visibility="{x:Bind Downloading}"/>
-                                                <ProgressRing Grid.Row="1" Grid.Column="1" Margin="5,0" IsIndeterminate="False" Value="{x:Bind ConversionProgress}" Visibility="{x:Bind Converting}"/>
-                                                <ProgressRing Grid.Row="1" Grid.Column="1" Margin="5,0" IsIndeterminate="True" Visibility="{x:Bind Moving}"/>
-                                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="5,2" Visibility="{x:Bind CustomTimes, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}">
-                                                    <TextBlock Text="{x:Bind ProgressInfo.State}" Visibility="{x:Bind Downloading}"/>
-                                                    <TextBlock Text="{x:Bind ProgressInfo.DownloadSpeed}" Visibility="{x:Bind Downloading}"/>
-                                                    <TextBlock x:Uid="/DownloaderPage/savingFile" Visibility="{x:Bind Moving}"/>
-                                                </StackPanel>
-                                                <Grid Grid.Row="1" Grid.Column="2" Margin="5,2" Visibility="{x:Bind CustomTimes}">
-                                                    <TextBlock x:Uid="/DownloaderPage/downloading" Visibility="{x:Bind Downloading}"/>
+                                                <!-- Line 2: important chips | technical chips (+ conversion hint) ... site domain on the right -->
+                                                <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="8,4,0,0" ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition/>
+                                                        <ColumnDefinition Width="auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <ctc:WrapPanel Orientation="Horizontal" HorizontalSpacing="4" VerticalSpacing="4" VerticalAlignment="Center"
+                                                                   Visibility="{x:Bind HasFormatInfo, Mode=OneWay}"
+                                                                   ToolTipService.ToolTip="{x:Bind FormatTooltip, Mode=OneWay}">
+                                                        <ItemsControl ItemsSource="{x:Bind PrimaryChips, Mode=OneWay}" IsTabStop="False">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="4"/>
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="x:String">
+                                                                    <Border CornerRadius="4" Padding="6,1"
+                                                                            Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                                                                        <TextBlock Text="{x:Bind Mode=OneTime}" FontSize="12" FontWeight="SemiBold"/>
+                                                                    </Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <Rectangle Width="1" Height="14" Margin="2,0" VerticalAlignment="Center"
+                                                                   Fill="{ThemeResource TextFillColorTertiaryBrush}"
+                                                                   Visibility="{x:Bind HasSecondaryChips, Mode=OneWay}"/>
+                                                        <ItemsControl ItemsSource="{x:Bind SecondaryChips, Mode=OneWay}" IsTabStop="False">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="4"/>
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="x:String">
+                                                                    <Border CornerRadius="4" Padding="6,1"
+                                                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                                                                        <TextBlock Text="{x:Bind Mode=OneTime}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                                    </Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <Border CornerRadius="4" Padding="6,1" BorderThickness="1"
+                                                                BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                                                                Visibility="{x:Bind HasConversionChip, Mode=OneWay}">
+                                                            <TextBlock Text="{x:Bind ConversionChip, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                                        </Border>
+                                                    </ctc:WrapPanel>
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind SiteDomain, Mode=OneTime}" FontSize="12" VerticalAlignment="Center"
+                                                               MaxWidth="130" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                                               ToolTipService.ToolTip="{x:Bind SiteDomain, Mode=OneTime}"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                                 </Grid>
-                                                <TextBlock x:Uid="/DownloaderPage/converting" Grid.Row="1" Grid.Column="2" Margin="5,2" Visibility="{x:Bind Converting}"/>
-                                                <StackPanel Orientation="Horizontal" Spacing="5" Grid.Row="1" Grid.Column="2" Margin="10,0,10,5" Visibility="{x:Bind Success}">
+
+                                                <!-- Download state (only while / after downloading) -->
+                                                <ProgressRing Grid.Row="2" Grid.Column="1" Margin="8,4,0,0" Width="20" Height="20" IsIndeterminate="False" Value="{x:Bind ProgressInfo.Progress}" Visibility="{x:Bind Downloading}"/>
+                                                <ProgressRing Grid.Row="2" Grid.Column="1" Margin="8,4,0,0" Width="20" Height="20" IsIndeterminate="False" Value="{x:Bind ConversionProgress}" Visibility="{x:Bind Converting}"/>
+                                                <ProgressRing Grid.Row="2" Grid.Column="1" Margin="8,4,0,0" Width="20" Height="20" IsIndeterminate="True" Visibility="{x:Bind Moving}"/>
+                                                <StackPanel Grid.Row="2" Grid.Column="2" Margin="6,4,0,0" Orientation="Horizontal" Spacing="10" Visibility="{x:Bind CustomTimes, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}">
+                                                    <TextBlock Text="{x:Bind ProgressInfo.State}" FontSize="12" Visibility="{x:Bind Downloading}"/>
+                                                    <TextBlock Text="{x:Bind ProgressInfo.DownloadSpeed}" FontSize="12" Visibility="{x:Bind Downloading}"/>
+                                                    <TextBlock x:Uid="/DownloaderPage/savingFile" FontSize="12" Visibility="{x:Bind Moving}"/>
+                                                </StackPanel>
+                                                <Grid Grid.Row="2" Grid.Column="2" Margin="6,4,0,0" Visibility="{x:Bind CustomTimes}">
+                                                    <TextBlock x:Uid="/DownloaderPage/downloading" FontSize="12" Visibility="{x:Bind Downloading}"/>
+                                                </Grid>
+                                                <TextBlock x:Uid="/DownloaderPage/converting" Grid.Row="2" Grid.Column="2" FontSize="12" Margin="6,4,0,0" Visibility="{x:Bind Converting}"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="5" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="8,4,0,0" Visibility="{x:Bind Success}">
                                                     <SymbolIcon Symbol="Accept" Foreground="Green"/>
-                                                    <TextBlock x:Uid="/DownloaderPage/done"/>
+                                                    <TextBlock x:Uid="/DownloaderPage/done" FontSize="12" VerticalAlignment="Center"/>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Spacing="5" Grid.Row="1" Grid.Column="2" Margin="10,0,10,5" Visibility="{x:Bind Failed}">
+                                                <StackPanel Orientation="Horizontal" Spacing="5" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="8,4,0,0" Visibility="{x:Bind Failed}">
                                                     <SymbolIcon Symbol="Cancel" Foreground="Red"/>
-                                                    <TextBlock x:Uid="/DownloaderPage/failed"/>
+                                                    <TextBlock x:Uid="/DownloaderPage/failed" FontSize="12" VerticalAlignment="Center"/>
                                                 </StackPanel>
-                                                <TextBlock Grid.Row="2" Grid.ColumnSpan="3" Margin="0,5" MaxLines="2" TextTrimming="CharacterEllipsis" Visibility="{Binding ElementName=itemRoot, Path=IsSelected, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}">
-                                            <Run Text="{x:Bind Video.Uploader}"/>
-                                            <Run Text="|"/>
-                                            <Run Text="{x:Bind Duration}"/>
-                                            <Run Text="|"/>
-                                            <Run Text="{x:Bind Video.UploadDate.Value.Date.ToShortDateString()}"/>
-                                                </TextBlock>
                                             </Grid>
                                         </ListViewItem>
                                     </DataTemplate>
@@ -467,16 +569,33 @@
 
                         </Grid>
 
-                        <Grid Margin="2,5">
+                        <!-- -2 cancels the buttons' own 2 px margin: Download aligns with the playlist's left edge,
+                             "yt-dlp args" with the open-folder button below (both 20 px from the window edge). -->
+                        <Grid x:Name="queueActionsRow" Margin="-2,5">
 
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="auto"/>
                                 <ColumnDefinition/>
+                                <ColumnDefinition Width="auto"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition/>
                                 <RowDefinition Height="auto"/>
                             </Grid.RowDefinitions>
+
+                            <!-- Custom yt-dlp parameters (accent colored while active) -->
+                            <Button x:Name="customArgsButton" Grid.Column="2" Margin="2" VerticalAlignment="Stretch" HorizontalAlignment="Right"
+                                    Command="{x:Bind ViewModel.OpenCustomArgsCommand}"
+                                    IsEnabled="{x:Bind ViewModel.DownloadFileCommand.IsRunning, Mode=OneWay, Converter={StaticResource InverseBoolConverter}}"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.CustomArgsTooltip, Mode=OneWay}">
+                                <!-- Same icon font/size as the other buttons in this row (Segoe Fluent "Code"); accent colored like Cookies when active -->
+                                <StackPanel>
+                                    <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE943;" FontSize="20" HorizontalAlignment="Center"
+                                              Foreground="{x:Bind ViewModel.CustomArgsActive, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"/>
+                                    <TextBlock Text="yt-dlp args" HorizontalAlignment="Center"
+                                               Foreground="{x:Bind ViewModel.CustomArgsActive, Mode=OneWay, Converter={StaticResource CookieAccentForegroundConverter}}"/>
+                                </StackPanel>
+                            </Button>
 
                             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                                 <Button Margin="2"
@@ -537,7 +656,7 @@
                             </StackPanel>
 
                             <StackPanel x:Name="progressBarPanel" Grid.Column="1" VerticalAlignment="Center" Visibility="{x:Bind ViewModel.DownloadFileCommand.IsRunning}">
-                                <TextBlock x:Uid="/DownloaderPage/progress" Margin="3"/>
+                                <TextBlock Text="{x:Bind ViewModel.DownloadProgressText, Mode=OneWay}" Margin="3"/>
                                 <ProgressBar Margin="3" Value="{x:Bind ViewModel.DownloadProgress}"/>
                             </StackPanel>
 
@@ -653,9 +772,9 @@
                 <ColumnDefinition/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <FontIcon Glyph="&#xEB52;" FontSize="35" FontFamily="{StaticResource SymbolThemeFontFamily}" Foreground="{ThemeResource SystemAccentColor}"/>
+            <FontIcon Glyph="&#xEB52;" FontSize="35" VerticalAlignment="Center" FontFamily="{StaticResource SymbolThemeFontFamily}" Foreground="{ThemeResource SystemAccentColor}"/>
             <TextBlock x:Uid="/DownloaderPage/donationBanner" Grid.Column="1" Margin="15,5" FontSize="16" TextWrapping="Wrap" VerticalAlignment="Center" MaxLines="4" TextTrimming="CharacterEllipsis"/>
-            <Button Grid.Column="3" x:Uid="/DownloaderPage/donationBtn" Click="OpenDonationPage" Style="{StaticResource AccentButtonStyle}"/>
+            <Button Grid.Column="2" Content="Donate (onionware-github) ♥" ToolTipService.ToolTip="Donations go to Jaden Phil Nebel (onionware-github), the original author of OnionMedia" Click="OpenDonationPage" Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Center"/>
         </Grid>
 
         <!-- Unobtrusive cookie feedback, centered near the bottom, auto-closes -->

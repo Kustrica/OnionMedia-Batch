@@ -182,6 +182,16 @@
 
                                 <CheckBox x:Uid="/SettingsPage/clearListsAfterOperation" IsChecked="{x:Bind m:AppSettings.Instance.ClearListsAfterOperation}"/>
                                 <CheckBox x:Uid="/SettingsPage/fallbackToSoftwareEncoding" IsChecked="{x:Bind m:AppSettings.Instance.FallBackToSoftwareEncoding}"/>
+                                <ComboBox Header="Video compatibility (downloads)" Margin="0,0,0,6" MinWidth="320"
+                                          ItemsSource="{x:Bind m:AppSettings.VideoCompatibilityModes, Mode=OneTime}"
+                                          SelectedItem="{x:Bind m:AppSettings.Instance.VideoCompatibilityMode, Mode=TwoWay}"
+                                          ToolTipService.ToolTip="Original (default): saved as the site delivers it, fastest, no conversion. Universal: converted to H.264 + AAC (MP4) when needed, plays everywhere incl. iPhone – takes longer when converting. Compact: AV1/VP9 converted to HEVC + AAC (MP4), smaller files – converting takes longer.">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="e:VideoCompatibilityMode">
+                                            <ContentPresenter Content="{x:Bind Converter={StaticResource EnumDisplayNameConverter}, Mode=OneTime}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
                                 <CheckBox x:Name="convertToH264" x:Uid="/SettingsPage/autoConvertToH264" IsChecked="{x:Bind m:AppSettings.Instance.AutoConvertToH264AfterDownload}"/>
                                 <StackPanel Visibility="{x:Bind convertToH264.IsChecked, Mode=OneWay}">
                                     <CheckBox x:Name="useHwAccelerated" x:Uid="/SettingsPage/useHwAccelerated" Margin="15,0" IsChecked="{x:Bind m:AppSettings.Instance.UseHardwareAcceleratedEncoding}"/>
@@ -290,15 +300,22 @@
                     Margin="{StaticResource XSmallTopMargin}"
                     Style="{ThemeResource BodyTextBlockStyle}" />
 
+                    <TextBlock Margin="{StaticResource XSmallTopMargin}" Style="{ThemeResource BodyTextBlockStyle}" TextWrapping="Wrap">
+                        <Run Text="Original app by "/><Hyperlink NavigateUri="https://github.com/onionware-github">Jaden Phil Nebel (onionware-github)</Hyperlink><Run Text="."/>
+                        <LineBreak/>
+                        <Run Text="OnionMedia Batch fork maintained by "/><Hyperlink NavigateUri="https://github.com/Kustrica">Kustrica</Hyperlink><Run Text="."/>
+                    </TextBlock>
+
                         <ctc:WrapPanel Orientation="Horizontal" HorizontalSpacing="10" VerticalSpacing="10" Margin="{StaticResource SmallTopBottomMargin}" x:DefaultBindMode="OneTime">
                             <HyperlinkButton x:Uid="SettingsPage_PrivacyTermsLink"/>
                             <HyperlinkButton Content="Special Thanks" Command="{x:Bind ViewModel.ShowThanksDialogCommand}"/>
                             <HyperlinkButton x:Uid="/SettingsPage/licenseBtn" Command="{x:Bind ViewModel.ShowLicenseCommand}"/>
                             <HyperlinkButton Content="Third-Party" Command="{x:Bind ViewModel.ShowThirdPartyLicensesCommand}"/>
                             <HyperlinkButton x:Uid="/SettingsPage/contactBtn" Command="{x:Bind ViewModel.OpenContactMailCommand}"/>
-                            <HyperlinkButton Content="GitHub" NavigateUri="https://github.com/onionware-github/OnionMedia"/>
+                            <HyperlinkButton Content="GitHub (fork)" NavigateUri="https://github.com/Kustrica/OnionMedia-Batch" ToolTipService.ToolTip="OnionMedia Batch by Kustrica"/>
+                        <HyperlinkButton Content="GitHub (original)" NavigateUri="https://github.com/onionware-github/OnionMedia" ToolTipService.ToolTip="OnionMedia by onionware-github"/>
                         </ctc:WrapPanel>
-                        <HyperlinkButton x:Uid="/SettingsPage/donateBtn" NavigateUri="{x:Bind c:GlobalResources.LocalDonationUrl, Mode=OneTime}" HorizontalAlignment="Stretch" BorderBrush="SlateGray" BorderThickness="1"/>
+                        <HyperlinkButton Content="♥ Donate (onionware-github) ♥" ToolTipService.ToolTip="Donations go to Jaden Phil Nebel (onionware-github), the original author of OnionMedia" NavigateUri="{x:Bind c:GlobalResources.LocalDonationUrl, Mode=OneTime}" HorizontalAlignment="Stretch" BorderBrush="SlateGray" BorderThickness="1"/>
 
                         <ctc:WrapPanel Orientation="Horizontal" HorizontalSpacing="40" VerticalSpacing="30" MaxHeight="350" Margin="{StaticResource SmallTopMargin}">
                             <Image Source="../Assets/OnionMedia_Icon_New.png" Height="200" VerticalAlignment="Top"/>
@@ -319,15 +336,22 @@
                     Margin="{StaticResource XSmallTopMargin}"
                     Style="{ThemeResource BodyTextBlockStyle}" />
 
-                    <ctc:WrapPanel Orientation="Horizontal" HorizontalSpacing="5" VerticalSpacing="10" Margin="{StaticResource SmallTopBottomMargin}" x:DefaultBindMode="OneTime">
+                    <TextBlock Margin="{StaticResource XSmallTopMargin}" Style="{ThemeResource BodyTextBlockStyle}" TextWrapping="Wrap">
+                        <Run Text="Original app by "/><Hyperlink NavigateUri="https://github.com/onionware-github">Jaden Phil Nebel (onionware-github)</Hyperlink><Run Text="."/>
+                        <LineBreak/>
+                        <Run Text="OnionMedia Batch fork maintained by "/><Hyperlink NavigateUri="https://github.com/Kustrica">Kustrica</Hyperlink><Run Text="."/>
+                    </TextBlock>
+
+                    <ctc:WrapPanel Orientation="Horizontal" HorizontalSpacing="10" VerticalSpacing="10" Margin="{StaticResource SmallTopBottomMargin}" x:DefaultBindMode="OneTime">
                         <HyperlinkButton x:Uid="SettingsPage_PrivacyTermsLink"/>
                         <HyperlinkButton Content="Special Thanks" Command="{x:Bind ViewModel.ShowThanksDialogCommand}"/>
                         <HyperlinkButton x:Uid="/SettingsPage/licenseBtn" Command="{x:Bind ViewModel.ShowLicenseCommand}"/>
                         <HyperlinkButton Content="Third-Party" Command="{x:Bind ViewModel.ShowThirdPartyLicensesCommand}"/>
                         <HyperlinkButton x:Uid="/SettingsPage/contactBtn" Command="{x:Bind ViewModel.OpenContactMailCommand}"/>
-                        <HyperlinkButton Content="GitHub" NavigateUri="https://github.com/onionware-github/OnionMedia"/>
+                        <HyperlinkButton Content="GitHub (fork)" NavigateUri="https://github.com/Kustrica/OnionMedia-Batch" ToolTipService.ToolTip="OnionMedia Batch by Kustrica"/>
+                        <HyperlinkButton Content="GitHub (original)" NavigateUri="https://github.com/onionware-github/OnionMedia" ToolTipService.ToolTip="OnionMedia by onionware-github"/>
                     </ctc:WrapPanel>
-                    <HyperlinkButton x:Uid="/SettingsPage/donateBtn" NavigateUri="{x:Bind c:GlobalResources.LocalDonationUrl, Mode=OneTime}" HorizontalAlignment="Stretch" BorderBrush="SlateGray" BorderThickness="1"/>
+                    <HyperlinkButton Content="♥ Donate (onionware-github) ♥" ToolTipService.ToolTip="Donations go to Jaden Phil Nebel (onionware-github), the original author of OnionMedia" NavigateUri="{x:Bind c:GlobalResources.LocalDonationUrl, Mode=OneTime}" HorizontalAlignment="Stretch" BorderBrush="SlateGray" BorderThickness="1"/>
 
                     <ctc:WrapPanel Orientation="Horizontal" HorizontalSpacing="40" VerticalSpacing="30" MaxHeight="350" Margin="{StaticResource SmallTopMargin}">
                         <Image Source="../Assets/OnionMedia_Icon_New.png" Height="200" VerticalAlignment="Top"/>

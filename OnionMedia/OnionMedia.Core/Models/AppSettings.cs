@@ -89,6 +89,15 @@ namespace OnionMedia.Core.Models
             cookieCustomBrowserKey = settingsService.GetSetting("cookieCustomBrowserKey") as string ?? string.Empty;
             cookieFilePath = settingsService.GetSetting("cookieFilePath") as string ?? string.Empty;
             pastedCookies = settingsService.GetSetting("pastedCookies") as string ?? string.Empty;
+
+            //yt-dlp / output compatibility settings (OnionMedia-Batch)
+            // Default is Original (no conversion). Values stored by earlier test builds under "videoCompatibilityMode"
+            // (default Universal) are ignored on purpose; only a choice made in this version ("videoCompatibilityMode2") counts.
+            videoCompatibilityMode = ParseEnumOrDefault(settingsService.GetSetting("videoCompatibilityMode2"), VideoCompatibilityMode.Original);
+            useCustomYtDlpArgs = settingsService.GetSetting("useCustomYtDlpArgs") as bool? ?? false;
+            customYtDlpArgs = settingsService.GetSetting("customYtDlpArgs") as string ?? string.Empty;
+            autoUpdateYtDlp = settingsService.GetSetting("autoUpdateYtDlp") as bool? ?? true;
+            lastYtDlpUpdateCheckTicks = settingsService.GetSetting("lastYtDlpUpdateCheckTicks") as long? ?? 0;
         }
 
         private readonly ISettingsService settingsService = IoC.Default.GetService<ISettingsService>();
@@ -387,6 +396,60 @@ namespace OnionMedia.Core.Models
             set => SetSetting(ref pastedCookies, value, "pastedCookies");
         }
         private string pastedCookies;
+
+
+        //yt-dlp / output compatibility settings (OnionMedia-Batch)
+
+        /// <summary>
+        /// Controls which codecs the downloaded videos end up in.
+        /// Original (default) = no conversion; Universal = H.264 + AAC in MP4 (plays everywhere, incl. iPhone gallery); Compact = HEVC.
+        /// </summary>
+        public VideoCompatibilityMode VideoCompatibilityMode
+        {
+            get => videoCompatibilityMode;
+            set
+            {
+                if (SetProperty(ref videoCompatibilityMode, value))
+                    settingsService.SetSetting("videoCompatibilityMode2", value.ToString());
+            }
+        }
+        private VideoCompatibilityMode videoCompatibilityMode;
+
+        public static VideoCompatibilityMode[] VideoCompatibilityModes { get; } = Enum.GetValues<VideoCompatibilityMode>().ToArray();
+
+        /// <summary>When true, <see cref="CustomYtDlpArgs"/> are appended to every yt-dlp call.</summary>
+        public bool UseCustomYtDlpArgs
+        {
+            get => useCustomYtDlpArgs;
+            set => SetSetting(ref useCustomYtDlpArgs, value, "useCustomYtDlpArgs");
+        }
+        private bool useCustomYtDlpArgs;
+
+        /// <summary>Raw user-defined yt-dlp arguments (validated by YtDlpCustomArgs).</summary>
+        public string CustomYtDlpArgs
+        {
+            get => customYtDlpArgs;
+            set => SetSetting(ref customYtDlpArgs, value ?? string.Empty, "customYtDlpArgs");
+        }
+        private string customYtDlpArgs;
+
+        /// <summary>Keep a writable copy of yt-dlp in LocalState and update it automatically.</summary>
+        public bool AutoUpdateYtDlp
+        {
+            get => autoUpdateYtDlp;
+            set => SetSetting(ref autoUpdateYtDlp, value, "autoUpdateYtDlp");
+        }
+        private bool autoUpdateYtDlp;
+
+        public long LastYtDlpUpdateCheckTicks
+        {
+            get => lastYtDlpUpdateCheckTicks;
+            set => SetSetting(ref lastYtDlpUpdateCheckTicks, value, "lastYtDlpUpdateCheckTicks");
+        }
+        private long lastYtDlpUpdateCheckTicks;
+
+        private static T ParseEnumOrDefault<T>(object value, T defaultValue) where T : struct
+            => value != null && Enum.TryParse<T>(value.ToString(), out var result) ? result : defaultValue;
 
 
         private void SetSetting<T>(ref T field, T value, string settingName, bool forceOnPropertyChanged = false, [CallerMemberName] string propName = null)

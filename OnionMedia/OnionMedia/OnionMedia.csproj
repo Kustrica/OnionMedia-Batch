@@ -70,6 +70,7 @@
 		<None Remove="Views\Dialogs\LicensesDialog.xaml" />
 		<None Remove="Views\Dialogs\PlaylistSelectorDialog.xaml" />
 		<None Remove="Views\Dialogs\CookieViewerDialog.xaml" />
+		<None Remove="Views\Dialogs\CustomArgsDialog.xaml" />
 		<None Remove="Core\**" />
 		<None Remove="ViewModels\Dialogs\**" />
 	</ItemGroup>
@@ -161,6 +162,9 @@
 			<Generator>MSBuild:Compile</Generator>
 		</Page>
 		<Page Update="Views\Dialogs\CookieViewerDialog.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Views\Dialogs\CustomArgsDialog.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</Page>
 	</ItemGroup>

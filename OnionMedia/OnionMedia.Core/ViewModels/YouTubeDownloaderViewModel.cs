@@ -73,6 +73,13 @@ namespace OnionMedia.Core.ViewModels
             AddSearchedVideo.PropertyChanged += (o, e) => UpdateProgressStateProperties();
             Videos.CollectionChanged += (o, e) => UpdateProgressStateProperties();
             windowClosingService.Closed += (o, e) => CancelAll();
+            Videos.CollectionChanged += (o, e) => OnPropertyChanged(nameof(ShowTrimSection));
+            // The "Compatibility" dropdown (downloader page) and Settings share AppSettings.VideoCompatibilityMode.
+            AppSettings.Instance.PropertyChanged += (o, e) =>
+            {
+                if (e.PropertyName == nameof(AppSettings.VideoCompatibilityMode))
+                    UpdatePlannedFormats();
+            };
             networkAvailable = this.networkStatusService?.IsNetworkConnectionAvailable() ?? true;
             if (this.networkStatusService != null)
                 this.networkStatusService.ConnectionStateChanged += (o, e) => this.dispatcher.Enqueue(() => NetworkAvailable = e);
@@ -112,16 +119,43 @@ namespace OnionMedia.Core.ViewModels
 
         public string ImportProgressText => $"Imported: {ImportProcessedLinks} / {ImportTotalLinks}";
 
-        public string QueueStatusText
+        /// <summary>Total number of videos in the playlist, e.g. "12 items" / "1 item" (shown next to "Current playlist").</summary>
+        public string QueueStatusText => Videos.Count == 1 ? "1 item" : $"{Videos.Count} items";
+
+        // Videos of the running download batch (for the "Downloaded: X / Y" text above the progress bar).
+        private StreamItemModel[] downloadBatch = Array.Empty<StreamItemModel>();
+        private ICollection<StreamItemModel> downloadBatchSource;
+
+        /// <summary>
+        /// Text above the download progress bar, like the import counter: "Downloaded: 3 / 12",
+        /// plus "(1 failed, 2 cancelled)" when something went wrong. Videos removed from the playlist
+        /// before they started are not counted.
+        /// </summary>
+        public string DownloadProgressText
         {
             get
             {
-                if (Videos.Any())
-                {
-                    return $"{Videos.Count(v => v.Success)} / {Videos.Count}";
-                }
-                return "0 / 0";
+                var batch = downloadBatch;
+                var source = downloadBatchSource;
+                var counted = batch.Where(v => v != null && (source == null || source.Contains(v) || v.DownloadState is DownloadState.IsDone or DownloadState.IsFailed)).ToArray();
+                if (counted.Length == 0) return "Downloading...";
+                int done = counted.Count(v => v.DownloadState == DownloadState.IsDone);
+                int failed = counted.Count(v => v.DownloadState == DownloadState.IsFailed);
+                int cancelled = counted.Count(v => v.DownloadState == DownloadState.IsCancelled);
+                string text = $"Downloaded: {done} / {counted.Length}";
+                var extras = new List<string>();
+                if (failed > 0) extras.Add($"{failed} failed");
+                if (cancelled > 0) extras.Add($"{cancelled} cancelled");
+                return extras.Count > 0 ? $"{text} ({string.Join(", ", extras)})" : text;
             }
+        }
+
+        private void RaiseDownloadProgressText() => dispatcher.Enqueue(() => OnPropertyChanged(nameof(DownloadProgressText)));
+
+        private void OnBatchItemPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(StreamItemModel.DownloadState))
+                RaiseDownloadProgressText();
         }
 
         [ObservableProperty]
@@ -187,7 +221,41 @@ namespace OnionMedia.Core.ViewModels
                 }
                 
                 OnPropertyChanged();
+                UpdatePlannedFormats();
             }
+        }
+
+        /// <summary>Refreshes the "will download as" info of every waiting item (quality ceiling / mode changed).</summary>
+        public void UpdatePlannedFormats()
+        {
+            foreach (var v in Videos.ToArray())
+                if (v != null && v.DownloadState is DownloadState.IsWaiting)
+                    v.UpdatePlannedFormat(SelectedQuality, SelectedDownloadMode);
+        }
+
+        /// <summary>
+        /// The queue list grows (animated in the view) when it holds more than 3 items, and stays big while/after
+        /// downloading until the items are removed.
+        /// </summary>
+        public bool QueueExpanded => Videos.Count > 3
+            || (Videos.Count > 0 && (DownloadFileCommand?.IsRunning == true || Videos.Any(v => v != null && v.DownloadState is not DownloadState.IsWaiting)));
+
+        /// <summary>True when custom yt-dlp parameters are enabled (highlights the button).</summary>
+        public bool CustomArgsActive => AppSettings.Instance.UseCustomYtDlpArgs && !string.IsNullOrWhiteSpace(AppSettings.Instance.CustomYtDlpArgs);
+
+        public string CustomArgsTooltip => CustomArgsActive
+            ? "Custom yt-dlp parameters: ON\n" + AppSettings.Instance.CustomYtDlpArgs.Trim()
+            : string.IsNullOrWhiteSpace(AppSettings.Instance.CustomYtDlpArgs) ? "Custom yt-dlp parameters" : "Custom yt-dlp parameters: saved, but turned off";
+
+        [ICommand]
+        private async Task OpenCustomArgsAsync()
+        {
+            var dialog = IoC.Default.GetService<ICustomArgsDialog>();
+            if (dialog == null) return;
+            await dialog.ShowAsync(SelectedVideo?.Video?.Url ?? Videos.FirstOrDefault()?.Video?.Url);
+            OnPropertyChanged(nameof(CustomArgsActive));
+            OnPropertyChanged(nameof(CustomArgsTooltip));
+            UpdatePlannedFormats();
         }
 
         [ICommand]
@@ -201,6 +269,7 @@ namespace OnionMedia.Core.ViewModels
 
         private void OnSelectedDownloadModeChanged(DownloadMode value)
         {
+            UpdatePlannedFormats();
             if (Resolutions == null) return;
 
             if (value == DownloadMode.Gif && ResolutionsAvailable)
@@ -237,6 +306,7 @@ namespace OnionMedia.Core.ViewModels
             {
                 SelectedQuality = Resolutions[0];
             }
+            UpdatePlannedFormats();
         }
 
         //Search a video or get a video from a url and add it to the queue.
@@ -297,10 +367,8 @@ namespace OnionMedia.Core.ViewModels
                 }
 
                 ScanVideoCount++;
-                var (cookieOpts, cookieCleanup) = BuildCookieFetchOptions();
-                RunResult<VideoData> data;
-                try { data = await DownloaderMethods.downloadClient.RunVideoDataFetch(videolink, overrideOptions: cookieOpts); }
-                finally { cookieCleanup.Dispose(); }
+                // Cookies + custom args + Cloudflare impersonation + web page scan (players, iframes, download buttons).
+                RunResult<VideoData> data = await DownloaderMethods.FetchVideoDataAsync(videolink);
 
                 // Handling for GIF/Direct downloads when yt-dlp fails to extract "video" metadata
 				if (!data.Success && SelectedDownloadMode == DownloadMode.Gif)
@@ -332,7 +400,16 @@ namespace OnionMedia.Core.ViewModels
                     return;
                 }
 
-                var video = new StreamItemModel(data);
+                StreamItemModel video;
+                try { video = new StreamItemModel(data); }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Could not create the queue item: " + ex.Message);
+                    VideoFetchingErrors.Add((data.ErrorOutput ?? Array.Empty<string>()).Append(ex.Message).ToArray());
+                    if (urlClone == SearchTerm) VideoNotFound = true;
+                    ScanVideoCount--;
+                    return;
+                }
                 video.Video.Url = videolink;
 
                 if (Videos.Any(v => v.Video.ID == video.Video.ID))
@@ -463,28 +540,38 @@ namespace OnionMedia.Core.ViewModels
         [ICommand]
         private async Task DownloadThumbnailAsync(StreamItemModel video)
         {
-	        string tempPath = Path.GetTempFileName();
-
 	        var types = new Dictionary<string, IEnumerable<string>>()
 	        {
 		        { "Portable Network Graphics", new[] { ".png" } },
 		        { "JPEG", new[] { ".jpg", ".jpeg" } }
 			};
-	        string filepath = await dialogService.ShowSaveFilePickerDialogAsync(video.Video.Title.TrimToFilename(int.MaxValue), types, DirectoryLocation.Pictures);
+	        // Titles can be made of invisible filler letters, emoji, RTL marks etc. – Photos then refuses the file. Keep the name plain.
+	        string suggestedName = (video.Video.Title ?? string.Empty).ToSafeFileName(120, fallback: string.IsNullOrEmpty(video.Video.ID) ? "thumbnail" : "thumbnail_" + video.Video.ID.ToSafeFileName(40, "video"));
+	        string filepath = await dialogService.ShowSaveFilePickerDialogAsync(suggestedName, types, DirectoryLocation.Pictures);
 	        if (filepath is null)
 	        {
 		        return;
 	        }
 
-	        string format = Path.GetExtension(filepath) switch
+	        string extension = Path.GetExtension(filepath).ToLowerInvariant();
+	        if (extension is not (".jpg" or ".jpeg" or ".png"))
 	        {
-		        ".jpg" => "jpg",
-		        ".jpeg" => "jpg",
-		        _ => "png"
-	        };
+		        filepath += ".png";
+		        extension = ".png";
+	        }
+	        string format = extension == ".png" ? "png" : "jpg";
 
-	        await DownloaderMethods.DownloadThumbnailAsync(video.Video.Url, tempPath, format);
-            File.Move(tempPath, filepath, true);
+	        var webSource = WebPageVideoResolver.GetSourceInfo(video.Video);
+	        try
+	        {
+		        await DownloaderMethods.DownloadThumbnailAsync(video.Video.Url, filepath, format,
+			        directThumbnailUrl: webSource != null ? video.Video.Thumbnail : null, referer: webSource?.PageUrl ?? video.Video.Url,
+			        fallbackThumbnailUrl: video.Video.Thumbnail);
+	        }
+	        catch (Exception ex) when (ex is not OperationCanceledException)
+	        {
+		        await dialogService.ShowInfoDialogAsync("Download thumbnail", "The thumbnail could not be saved: " + ex.Message, "OK");
+	        }
         }
 
         [ICommand]
@@ -597,13 +684,17 @@ namespace OnionMedia.Core.ViewModels
 
                             RunResult<VideoData> data = null;
                             // Retry logic: 3 attempts
-                            for (int i = 0; i < 3; i++)
+                            // FetchVideoDataAsync already retries anti-bot blocks and scans web pages, so fewer retries are needed there.
+                            int attempts = YtDlpOptions.IsYoutubeUrl(url) ? 3 : 2;
+                            for (int i = 0; i < attempts; i++)
                             {
                                 if (token.IsCancellationRequested) break;
-                                var (cookieOptsB, cookieCleanupB) = BuildCookieFetchOptions();
-                            try { data = await DownloaderMethods.downloadClient.RunVideoDataFetch(url, overrideOptions: cookieOptsB); }
-                            finally { cookieCleanupB.Dispose(); }
-                                if (data.Success) break;
+                                try { data = await DownloaderMethods.FetchVideoDataAsync(url, token); }
+                                catch (OperationCanceledException) { break; }
+                                if (data.Success && data.Data != null) break;
+                                // Only retry temporary problems (network, rate limit, anti-bot); "unsupported URL", 404,
+                                // private/removed videos fail the same way again and just doubled the import time.
+                                if (!YtDlpOptions.LooksLikeNetworkError(data.ErrorOutput) && !YtDlpOptions.LooksLikeAntiBotBlock(data.ErrorOutput)) break;
                                 try { await Task.Delay(500 * (i + 1), token); } catch (OperationCanceledException) { break; }
                             }
 
@@ -803,10 +894,7 @@ namespace OnionMedia.Core.ViewModels
                 {
                     try
                     {
-                        var (cookieOptsC, cookieCleanupC) = BuildCookieFetchOptions();
-                        RunResult<VideoData> video;
-                        try { video = await DownloaderMethods.downloadClient.RunVideoDataFetch(url, ct: cToken, overrideOptions: cookieOptsC); }
-                        finally { cookieCleanupC.Dispose(); }
+                        RunResult<VideoData> video = await DownloaderMethods.FetchVideoDataAsync(url, cToken);
 
                         // Video fetch logging for playlists
                         if (!video.Success)
@@ -840,8 +928,10 @@ namespace OnionMedia.Core.ViewModels
 
         private void OnProgressChanged(object sender, EventArgs e)
         {
+            OnPropertyChanged(nameof(QueueExpanded));
             OnPropertyChanged(nameof(ResolutionsAvailable));
             OnPropertyChanged(nameof(DownloadProgress));
+            OnPropertyChanged(nameof(DownloadProgressText));
 
             if (canceledAll || DownloadProgress == 100)
             {
@@ -852,32 +942,65 @@ namespace OnionMedia.Core.ViewModels
             taskbarProgressService.UpdateProgress(typeof(YouTubeDownloaderViewModel), DownloadProgress);
         }
 
+        /// <summary>Items selected in the queue (Ctrl/Shift multi-select); set by the page.</summary>
+        public IReadOnlyList<StreamItemModel> SelectedVideos
+        {
+            get => selectedVideos;
+            set
+            {
+                selectedVideos = value ?? Array.Empty<StreamItemModel>();
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(MultipleSelected));
+                OnPropertyChanged(nameof(ShowTrimSection));
+            }
+        }
+        private IReadOnlyList<StreamItemModel> selectedVideos = Array.Empty<StreamItemModel>();
+
+        public bool MultipleSelected => selectedVideos.Count > 1;
+
+        /// <summary>The "Short video" (trim) section only makes sense for exactly one selected video.</summary>
+        public bool ShowTrimSection => Videos.Any() && !MultipleSelected;
+
+        /// <summary>Removes one item (X button on the card / context menu).</summary>
+        public RelayCommand<StreamItemModel> RemoveItemCommand => removeItemCommand ??= new(item => { if (item != null) RemoveVideos(new[] { item }); });
+        private RelayCommand<StreamItemModel> removeItemCommand;
+
         private async Task RemoveVideoAsync()
         {
-            // If no video is selected, try to select the last one to remove it (as requested behavior)
-            if (SelectedVideo == null && Videos.Any())
-            {
-                SelectedVideo = Videos.Last();
-            }
+            // Remove button / Delete key: all selected items (multi-select), otherwise the selected one, otherwise the last one.
+            var items = selectedVideos.Count > 0 ? selectedVideos.ToList()
+                : SelectedVideo != null ? new List<StreamItemModel> { SelectedVideo }
+                : Videos.Any() ? new List<StreamItemModel> { Videos[^1] } : new List<StreamItemModel>();
+            RemoveVideos(items);
+            await Task.CompletedTask;
+        }
 
-            if (SelectedVideo == null) return;
+        /// <summary>Removes the items and selects the item that followed the first removed one (or the previous one at the end).</summary>
+        public void RemoveVideos(IEnumerable<StreamItemModel> toRemove)
+        {
+            var items = toRemove?.Where(i => i != null && Videos.Contains(i)).Distinct().ToList();
+            if (items == null || items.Count == 0) return;
 
             try
             {
-                if (SelectedVideo.DownloadState == DownloadState.IsLoading)
-                    SelectedVideo.RaiseCancel();
+                int firstIndex = items.Min(i => Videos.IndexOf(i));
+                foreach (var item in items)
+                    if (item.DownloadState == DownloadState.IsLoading)
+                        item.RaiseCancel();
 
-                if (Videos.Count <= 1)
-                    Videos.Clear();
-                else
-                    Videos.Remove(SelectedVideo);
+                lock (Videos)
+                    foreach (var item in items)
+                        Videos.Remove(item);
 
                 OnPropertyChanged(nameof(QueueIsEmpty));
                 OnPropertyChanged(nameof(QueueIsNotEmpty));
                 OnPropertyChanged(nameof(MultipleVideos));
+                OnPropertyChanged(nameof(QueueStatusText));
 
                 if (Videos.Any())
-                    SelectedVideo = Videos[^1];
+                    SelectedVideo = Videos[Math.Min(firstIndex, Videos.Count - 1)];
+                else
+                    selectedVideo = null;
 
                 Resolutions = new ObservableCollection<string>(DownloaderMethods.GetResolutions(Videos));
                 OnPropertyChanged(nameof(Resolutions));
@@ -891,7 +1014,6 @@ namespace OnionMedia.Core.ViewModels
                     SelectedQuality = null;
             }
             catch (InvalidOperationException) { Debug.WriteLine("InvalidOperation triggered"); }
-            await Task.CompletedTask;
         }
 
         /// <summary>
@@ -934,6 +1056,14 @@ namespace OnionMedia.Core.ViewModels
             CanceledAll += (o, e) => canceledAll = true;
             items.Where(i => i != null && videos.Contains(i)).ForEach(i => i.SetProgressToDefault());
             items.ForEach(v => v.QualityLabel = qualityLabel);
+            items.ForEach(v => v.UpdatePlannedFormat(qualityLabel, downloadMode));
+
+            // Counter above the progress bar ("Downloaded: X / Y"): follow the state of every item of this batch.
+            downloadBatch.ForEach(v => v.PropertyChanged -= OnBatchItemPropertyChanged, v => v != null);
+            downloadBatch = items.Where(v => v != null).ToArray();
+            downloadBatchSource = videos;
+            downloadBatch.ForEach(v => v.PropertyChanged += OnBatchItemPropertyChanged);
+            RaiseDownloadProgressText();
             
             List<StreamItemModel> failedVideos = new();
 
@@ -948,12 +1078,13 @@ namespace OnionMedia.Core.ViewModels
                 {
                     loadedVideo = (StreamItemModel)o;
                     Interlocked.Increment(ref finishedCount);
-                    OnPropertyChanged(nameof(QueueStatusText));
+                    RaiseDownloadProgressText();
                 };
 
                 tasks.Add(DownloaderMethods.DownloadStreamAsync(video, downloadMode, path).ContinueWith(t =>
                 {
                     queue.Release();
+                    RaiseDownloadProgressText();
                     if (t.Exception?.InnerException == null) return;
                     
                     // Track failure
@@ -1476,6 +1607,7 @@ namespace OnionMedia.Core.ViewModels
             OnPropertyChanged(nameof(ReadyToDownload));
             OnPropertyChanged(nameof(QueueStatusText));
             OnPropertyChanged(nameof(CanCancelOperation));
+            OnPropertyChanged(nameof(QueueExpanded));
         }
 
         public bool MultipleVideos => Videos.Count > 1;

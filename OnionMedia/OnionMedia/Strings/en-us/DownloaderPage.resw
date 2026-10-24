@@ -133,7 +133,7 @@
     <value>Current playlist</value>
   </data>
   <data name="donationBanner.Text" xml:space="preserve">
-    <value>OnionMedia is a voluntary project by a 19-year old individual developer, open and ad-free. If you enjoy my work and can afford it, consider supporting me with a donation - the price of a cup of coffee makes a big impact.</value>
+    <value>OnionMedia was created by Jaden Phil Nebel (onionware-github) as a voluntary, open and ad-free project; this fork (OnionMedia Batch) is maintained by Kustrica. If you enjoy the app, consider supporting the original author with a donation - the price of a cup of coffee makes a big impact.</value>
   </data>
   <data name="donationBtn.Content" xml:space="preserve">
     <value>Donate ❤</value>

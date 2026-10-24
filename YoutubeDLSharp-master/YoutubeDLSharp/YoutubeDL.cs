@@ -362,7 +362,7 @@ namespace YoutubeDLSharp
 				IgnoreConfig = true,
 				NoPlaylist = true,
 				HlsPreferNative = true,
-				ExternalDownloaderArgs = "-nostats -loglevel 0",
+				ExternalDownloaderArgs = "ffmpeg:-nostats -loglevel 0", // "ffmpeg:" = name of the downloader the args are meant for (avoids the yt-dlp warning)
 				Output = Path.Combine(OutputFolder, OutputFileTemplate),
 				RestrictFilenames = this.RestrictFilenames,
 				NoContinue = this.OverwriteFiles,

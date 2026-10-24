@@ -25,6 +25,7 @@ namespace OnionMedia;
 [Singleton(typeof(IDialogService), typeof(DialogService))]
 [Singleton(typeof(IDownloaderDialogService), typeof(DownloaderDialogService))]
 [Singleton(typeof(ICookieViewerDialog), typeof(CookieViewerDialogService))]
+[Singleton(typeof(ICustomArgsDialog), typeof(CustomArgsDialogService))]
 [Singleton(typeof(IThirdPartyLicenseDialog), typeof(ThirdPartyLicenseDialog))]
 [Singleton(typeof(IConversionPresetDialog), typeof(ConversionPresetDialog))]
 [Singleton(typeof(IFiletagEditorDialog), typeof(FiletagEditorDialog))]

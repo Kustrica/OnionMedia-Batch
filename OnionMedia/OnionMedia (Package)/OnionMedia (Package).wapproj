@@ -157,4 +157,12 @@
     <PRIResource Include="Strings\es\Resources.resw" />
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+  <!--
+    OnionMedia: the generated Add-AppDevPackage.ps1 rejects our self-signed certificate
+    ("certificate has no Basic Constraints extension"). Patch it and add install.bat to the sideloading layout.
+    See .project/CERTIFICATE.md
+  -->
+  <Target Name="OnionMediaPatchSideloadScripts" AfterTargets="_AddWindowsInstallScriptToTestLayout" Condition="'$(AppxPackageTestDir)' != ''">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\Patch-SideloadScripts.ps1&quot; -TestDir &quot;$(AppxPackageTestDir.TrimEnd('\'))&quot; -RepoRoot &quot;$(MSBuildProjectDirectory)\..\..&quot;" />
+  </Target>
 </Project>

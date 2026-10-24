@@ -26,6 +26,17 @@ sealed class PathProvider : IPathProvider
     public string DownloaderTempdir => Tempdir + @"\Downloader";
     public string ExternalBinariesDir => InstallPath + @"\ExternalBinaries\ffmpeg+yt-dlp\binaries\";
     public string FFmpegPath => ExternalBinariesDir + "ffmpeg.exe";
-    public string YtDlPath => ExternalBinariesDir + "yt-dlp.exe";
+    /// <summary>
+    /// Prefers the auto-updated copy in LocalState (the install folder of an MSIX package is read-only),
+    /// falls back to the bundled yt-dlp.exe.
+    /// </summary>
+    public string YtDlPath
+    {
+        get
+        {
+            string updated = Path.Combine(LocalPath, "yt-dlp", "yt-dlp.exe");
+            return File.Exists(updated) ? updated : ExternalBinariesDir + "yt-dlp.exe";
+        }
+    }
     public string LicensesDir => InstallPath + @"\licenses\";
 }
